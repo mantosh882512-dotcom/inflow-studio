@@ -3,687 +3,178 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#20252d">
-<title>Inflow Studio</title>
-
+<meta name="theme-color" content="#202633">
+<title>Inflow Studio — Dark Pink 3D Neumorphic</title>
 <style>
-:root {
-  --bg: #20252d;
-  --card: #292f38;
-  --text: #f4f6fa;
-  --muted: #aab3c1;
-  --edge: #353d48;
-  --white: #edf1f7;
-  --raised: 7px 7px 16px #171b21,
-           -7px -7px 16px #303741;
-  --pressed: inset 4px 4px 9px #171b21,
-             inset -4px -4px 9px #303741;
-}
+:root{--bg:#211a22;--surface:#29212b;--edge:#3b2d3c;--text:#f8f2f7;--muted:#b6a5b5;--mint:#ff78bd;--blue:#f2a0d0;--violet:#c7a5f5;--orange:#ffc4a0;--red:#ff8da8;--out:8px 8px 18px #171118,-8px -8px 18px #302631;--outsm:4px 4px 10px #171118,-4px -4px 10px #302631;--in:inset 4px 4px 9px #171118,inset -4px -4px 9px #302631}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}button,input{font:inherit}button{cursor:pointer}.app{min-height:100vh;display:grid;grid-template-columns:248px minmax(0,1fr)}
+.sidebar{padding:25px 18px;border-right:1px solid var(--edge);display:flex;flex-direction:column;gap:28px}.brand{display:flex;align-items:center;gap:12px;padding:0 8px}.brandmark{width:43px;height:43px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#ffb0d9,#e94f9e);color:#351629;font-size:24px;font-weight:950;box-shadow:var(--outsm)}.brandname{font-size:20px;font-weight:850;letter-spacing:-.8px}.brandname small{display:block;font-size:9px;letter-spacing:2.2px;color:var(--muted);margin-top:4px}
+.workspace{padding:13px;border-radius:16px;box-shadow:var(--in);display:flex;align-items:center;gap:10px}.avatar{width:35px;height:35px;border-radius:12px;background:linear-gradient(145deg,#ffc1e1,#c84d91);display:grid;place-items:center;color:white;font-weight:850}.workspace strong{font-size:12px;display:block}.workspace span{font-size:10px;color:var(--muted)}
+.navlabel{font-size:10px;letter-spacing:1.7px;color:#738098;font-weight:850;padding:0 12px;margin:2px 0 8px}.nav{width:100%;display:flex;align-items:center;gap:13px;text-align:left;border:1px solid transparent;background:transparent;color:var(--muted);padding:12px 13px;border-radius:13px;margin:3px 0;font-size:13px;transition:.2s}.nav .ico{width:20px;text-align:center;font-size:16px}.nav:hover{color:var(--text);box-shadow:var(--outsm)}.nav.active{color:var(--mint);background:var(--bg);box-shadow:var(--in);border-color:#3b2d3c}.count{margin-left:auto;background:#493448;color:#f8eaf3;border-radius:7px;padding:3px 6px;font-size:10px}
+.sidebar-bottom{margin-top:auto}.helpbox{padding:17px;border-radius:17px;background:linear-gradient(145deg,#352735,#251e28);box-shadow:var(--outsm);border:1px solid #333e50}.helpbox strong{font-size:12px}.helpbox p{font-size:11px;line-height:1.6;color:var(--muted)}.helpbox button{border:0;border-radius:10px;background:var(--mint);color:#351629;font-weight:850;padding:10px 12px;font-size:11px;width:100%}
+main{min-width:0;padding:28px clamp(16px,3vw,42px) 42px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:30px}.eyebrow{font-size:10px;letter-spacing:2px;color:var(--mint);font-weight:850;text-transform:uppercase}h1{font-size:clamp(24px,3vw,34px);letter-spacing:-1.2px;margin:8px 0 7px}.subtitle{font-size:12px;color:var(--muted);margin:0}.actions{display:flex;align-items:center;gap:12px}.search{width:205px;background:var(--bg);border:1px solid var(--edge);border-radius:13px;box-shadow:var(--in);padding:12px 14px;color:var(--text);outline:none;font-size:12px}.iconbtn{width:42px;height:42px;border:1px solid var(--edge);border-radius:13px;background:var(--surface);color:var(--text);box-shadow:var(--outsm);position:relative}.dot{position:absolute;right:9px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--mint)}.profile{display:flex;align-items:center;gap:9px}.profilepic{width:39px;height:39px;border-radius:14px;background:linear-gradient(145deg,#ffcb9c,#b87bdf);display:grid;place-items:center;font-weight:900;color:#31223b;box-shadow:var(--outsm)}.profile small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.welcome{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:24px}.welcome h2{font-size:17px;margin:0 0 6px}.primary{border:0;background:linear-gradient(135deg,#ffb0d9,#ed5ca7);color:#351629;padding:13px 17px;border-radius:13px;font-weight:900;font-size:12px;box-shadow:5px 5px 12px #171118,-3px -3px 8px #302631;white-space:nowrap;transition:.2s}.primary:active,.softbtn:active{box-shadow:var(--in);transform:translateY(1px)}
+.notice{padding:12px 15px;border-radius:12px;border:1px solid #654057;background:#382431;color:#ffd6e9;font-size:11px;line-height:1.6;margin-bottom:20px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:17px;margin-bottom:22px}.card{background:linear-gradient(145deg,#302532,#261f29);border:1px solid #3b2d3c;border-radius:20px;box-shadow:var(--out);padding:21px;min-width:0;transition:transform .2s,box-shadow .2s}.metric-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.metric-label{font-size:12px;color:var(--muted)}.metric-icon{width:39px;height:39px;border-radius:13px;display:grid;place-items:center;box-shadow:var(--outsm);font-size:17px}.mint{color:var(--mint)}.blue{color:var(--blue)}.violet{color:var(--violet)}.orange{color:var(--orange)}.metric-value{font-size:clamp(23px,2.4vw,31px);font-weight:850;letter-spacing:-1px;margin:18px 0 8px}.metric-foot{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap}.up{color:var(--mint);font-weight:850}
+.content-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(270px,1fr);gap:20px;margin-bottom:22px}.card-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:20px}.card-title h2{font-size:15px;margin:0 0 6px}.card-title p{font-size:11px;color:var(--muted);margin:0}.softbtn{border:1px solid #493448;background:var(--surface);color:var(--text);padding:9px 12px;border-radius:11px;box-shadow:var(--outsm);font-size:11px;white-space:nowrap}
+.chart-legend{display:flex;gap:16px;font-size:10px;color:var(--muted);margin-bottom:13px}.legend-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}.chart{width:100%;height:190px;display:block;overflow:visible}.chart text{fill:#8290a8;font-size:10px}.gridline{stroke:#493848;stroke-width:1;stroke-dasharray:3 5}.area{fill:url(#fill)}.line{fill:none;stroke:var(--mint);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.line2{fill:none;stroke:var(--blue);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+.donut-wrap{display:flex;align-items:center;justify-content:center;gap:22px;padding:7px 0 12px}.donut{width:145px;height:145px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--mint) 0 43%,var(--blue) 43% 72%,var(--violet) 72% 89%,#514052 89% 100%);box-shadow:var(--outsm);position:relative}.donut:after{content:"";position:absolute;inset:16px;border-radius:50%;background:var(--surface);box-shadow:var(--in)}.donut-center{position:relative;z-index:1;text-align:center}.donut-center strong{display:block;font-size:23px}.donut-center span{font-size:10px;color:var(--muted)}.legend{display:grid;gap:15px;min-width:90px}.legend-row{font-size:11px;color:var(--muted);display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:7px}.legend-row b{color:var(--text);font-size:11px}.legend-row i{width:7px;height:7px;border-radius:3px}
+.tablecard{padding:0;overflow:hidden}.tablehead{padding:21px 22px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:560px}th{text-align:left;font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:#7f8ba1;font-weight:850;padding:13px 20px;background:#251e28;border-top:1px solid #3b2d3c;border-bottom:1px solid #3b2d3c}td{padding:15px 20px;border-bottom:1px solid #3b2d3c;font-size:11px;color:#dce3f1}tr:last-child td{border-bottom:0}.video-cell{display:flex;align-items:center;gap:12px;min-width:190px}.thumb{width:66px;height:43px;border-radius:9px;display:grid;place-items:center;font-size:18px;box-shadow:var(--outsm);flex-shrink:0}.one{background:linear-gradient(135deg,#294e57,#53bda4)}.two{background:linear-gradient(135deg,#4b396d,#a98af0)}.three{background:linear-gradient(135deg,#6b433b,#e6a16c)}.video-cell strong{display:block;font-size:11px;margin-bottom:5px}.video-cell small{color:var(--muted);font-size:10px}.status{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:8px;background:#42283a;color:var(--mint);font-size:10px;font-weight:850}.status:before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}.status.review{background:#493126;color:var(--orange)}
+.bottom-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(270px,1fr);gap:20px;margin-top:22px}.activity{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid #3b2d3c}.activity:last-child{border:0;padding-bottom:0}.activity-icon{width:35px;height:35px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;box-shadow:var(--outsm)}.activity strong{font-size:11px;display:block;margin:2px 0 5px}.activity p{font-size:10px;color:var(--muted);margin:0;line-height:1.5}.activity time{display:block;color:#758198;font-size:9px;margin-top:5px}.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.quick{border:1px solid #3b2d3c;background:var(--surface);border-radius:15px;padding:17px 14px;text-align:left;color:var(--text);box-shadow:var(--outsm);transition:.18s}.quick:hover{transform:translateY(-2px)}.quick span{font-size:19px;display:block;margin-bottom:13px}.quick strong{font-size:11px;display:block}.quick small{font-size:10px;color:var(--muted);display:block;margin-top:5px}
+.page{display:none}.page.active{display:block}.placeholder{padding:24px;border-radius:16px;box-shadow:var(--in);color:var(--muted);font-size:12px;line-height:1.7}.toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,20px);background:#352735;border:1px solid #654057;color:var(--mint);padding:12px 18px;border-radius:12px;box-shadow:var(--out);font-size:12px;opacity:0;pointer-events:none;transition:.25s;z-index:10}.toast.show{opacity:1;transform:translate(-50%,0)}.mobile-menu{display:none}
+@media(max-width:1100px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.content-grid,.bottom-grid{grid-template-columns:1fr}.search{width:160px}}
+@media(max-width:720px){.app{grid-template-columns:1fr}.sidebar{display:none;position:fixed;z-index:8;inset:0 auto 0 0;width:260px;background:var(--bg);box-shadow:12px 0 30px #171118}.sidebar.open{display:flex}.mobile-menu{display:inline-block}.topbar{align-items:flex-start;margin-bottom:24px}.actions{gap:7px}.search{display:none}.profile>div:last-child{display:none}main{padding:19px 15px 30px}.welcome{align-items:flex-start}.welcome .primary{padding:11px 12px}.metrics{gap:12px}.card{padding:16px;border-radius:17px}.metric-value{font-size:25px}.metric-icon{width:33px;height:33px}.donut-wrap{gap:15px}.donut{width:125px;height:125px}.donut:after{inset:14px}.legend{gap:12px}.chart{height:165px}.tablehead{padding:17px}.quick{padding:14px 12px}}
+@media(max-width:390px){.metrics{grid-template-columns:1fr 1fr}.metric-value{font-size:22px}.welcome{display:block}.welcome .primary{margin-top:16px}.donut-wrap{flex-direction:column}.legend{width:100%}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important}}
 
-* { box-sizing: border-box; }
+/* Eye-comfort soft 3D neumorphism + floating controls */
+:root{--bg:#211c22;--surface:#29232b;--edge:#3a303b;--text:#f1eaf1;--muted:#b8acb8;--mint:#f18abf;--blue:#d99fca;--violet:#c4a9df;--orange:#e9b8a5;--red:#eaa0b3;--out:9px 9px 20px rgba(12,9,13,.52),-7px -7px 18px rgba(72,58,73,.38);--outsm:5px 5px 12px rgba(12,9,13,.48),-4px -4px 10px rgba(72,58,73,.34);--in:inset 4px 4px 9px rgba(12,9,13,.45),inset -4px -4px 9px rgba(72,58,73,.3)}
+body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);color:var(--text)}
+.card,.helpbox,.quick,.iconbtn,.primary,.softbtn,.metric-icon,.activity-icon,.thumb,.brandmark,.profilepic{transition:transform .22s ease,box-shadow .22s ease,filter .22s ease}
+.card{background:linear-gradient(145deg,#302932,#262129);border-color:#3a303b;box-shadow:var(--out)}
+.card:hover{transform:translateY(-3px);box-shadow:11px 13px 25px rgba(10,7,11,.56),-7px -7px 18px rgba(72,58,73,.36)}
+.primary,.helpbox button{background:linear-gradient(145deg,#f5b0d3,#df76ad);color:#382331;border:1px solid #f6b8d8;box-shadow:6px 6px 13px rgba(12,8,13,.48),-4px -4px 10px rgba(73,58,74,.32),inset 1px 1px 1px rgba(255,255,255,.35);border-radius:14px}
+.softbtn,.iconbtn,.quick{background:linear-gradient(145deg,#302932,#272129);border:1px solid #3b303c;box-shadow:var(--outsm)}
+.softbtn{color:#edb4d1;padding:10px 14px;border-radius:12px}
+.nav:hover,.softbtn:hover,.iconbtn:hover,.quick:hover{transform:translateY(-2px);color:#f6b4d4;box-shadow:7px 7px 15px rgba(12,8,13,.48),-4px -4px 10px rgba(72,58,73,.34)}
+.primary:hover,.helpbox button:hover{transform:translateY(-2px);filter:brightness(1.04);box-shadow:8px 9px 16px rgba(12,8,13,.5),-4px -4px 10px rgba(72,58,73,.32)}
+.primary:active,.softbtn:active,.iconbtn:active,.quick:active,.helpbox button:active{transform:translateY(1px);box-shadow:var(--in)}
+.search,.workspace,.placeholder{background:#252027;border-color:#39303a;box-shadow:var(--in)}
+.nav.active{background:#252027;box-shadow:var(--in);border-color:#4b3848;color:#f2a4ca}
+.status{background:#3d2a39;color:#f1a6cc}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
 
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: Arial, sans-serif;
-}
 
-button, input, select { font: inherit; }
-button { cursor: pointer; }
+/* Admin login overlay; original dashboard design remains unchanged */
+#adminLogin{min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%)}
+#adminLogin .login-card{width:min(100%,410px);padding:28px;border:1px solid var(--edge);border-radius:22px;background:linear-gradient(145deg,#302932,#262129);box-shadow:var(--out)}
+#adminLogin .login-brand{font-size:25px;font-weight:900;margin-bottom:8px}#adminLogin .login-sub{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:24px}
+#adminLogin label{display:block;font-size:12px;color:var(--muted);margin:15px 0 7px}
+#adminLogin input{width:100%;padding:13px 14px;border:1px solid var(--edge);border-radius:12px;background:#252027;box-shadow:var(--in);color:var(--text);outline:none}
+#adminLogin input:focus{border-color:#f18abf}#adminLogin button{width:100%;margin-top:20px;padding:13px;border:0;border-radius:12px;background:linear-gradient(145deg,#f5b0d3,#df76ad);color:#382331;font-weight:850}
+#loginMessage{font-size:12px;line-height:1.5;color:#f5a6bd;margin-top:14px;min-height:18px;overflow-wrap:anywhere}
+.app{display:none}body.admin-authenticated .app{display:grid}body.admin-authenticated #adminLogin{display:none}
 
-.app {
-  display: grid;
-  grid-template-columns: 235px minmax(0, 1fr);
-  min-height: 100vh;
-}
-
-.sidebar {
-  padding: 24px 16px;
-  border-right: 1px solid var(--edge);
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 5px;
-  font-size: 22px;
-  font-weight: 900;
-}
-
-.logo {
-  width: 43px;
-  height: 43px;
-  border-radius: 14px;
-  background: linear-gradient(145deg,#f7f8fc,#cbd2dc);
-  color: #242a33;
-  display: grid;
-  place-items: center;
-  box-shadow: var(--raised);
-}
-
-.workspace, .card, .panel {
-  background: linear-gradient(145deg,#2d333d,#252a32);
-  border: 1px solid var(--edge);
-  border-radius: 18px;
-  box-shadow: var(--raised);
-}
-
-.workspace {
-  padding: 14px;
-  font-size: 12px;
-}
-
-.muted { color: var(--muted); }
-
-.nav-label {
-  font-size: 10px;
-  color: #8994a5;
-  letter-spacing: 2px;
-  padding: 0 10px;
-  margin-bottom: 8px;
-}
-
-.nav {
-  width: 100%;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 13px;
-  margin: 4px 0;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--muted);
-  text-align: left;
-  transition: .2s;
-}
-
-.nav:hover { box-shadow: var(--raised); color: white; }
-.nav.active {
-  color: white;
-  background: var(--bg);
-  box-shadow: var(--pressed);
-  border-color: var(--edge);
-}
-
-main { min-width: 0; padding: 28px; }
-
-.topbar, .welcome, .panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-}
-
-.topbar { margin-bottom: 30px; }
-h1 { font-size: 29px; margin: 7px 0; }
-h2 { font-size: 17px; }
-h3 { font-size: 15px; }
-
-.subtitle { color: var(--muted); font-size: 12px; }
-
-.search, .field {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--edge);
-  border-radius: 12px;
-  background: var(--bg);
-  color: white;
-  box-shadow: var(--pressed);
-  outline: none;
-}
-
-.search { max-width: 220px; }
-
-.btn {
-  padding: 11px 15px;
-  border: 1px solid var(--edge);
-  border-radius: 12px;
-  background: var(--card);
-  color: var(--text);
-  box-shadow: var(--raised);
-  transition: .2s;
-}
-
-.btn:active {
-  box-shadow: var(--pressed);
-  transform: translateY(1px);
-}
-
-.btn.primary {
-  background: linear-gradient(145deg,#f8f9fc,#dce2eb);
-  color: #222832;
-  font-weight: bold;
-}
-
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(4,minmax(0,1fr));
-  gap: 16px;
-  margin: 24px 0;
-}
-
-.card { padding: 20px; min-width: 0; }
-.metric-label { color: var(--muted); font-size: 12px; }
-.metric-value { font-size: 29px; font-weight: 800; margin: 17px 0 8px; }
-.metric-note { font-size: 11px; color: #e6eaf1; }
-
-.grid {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 18px;
-  margin-bottom: 20px;
-}
-
-.panel { padding: 21px; min-width: 0; }
-.panel-head { margin-bottom: 16px; }
-.panel-head h2 { margin: 0; }
-
-.chart {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.chart-label { fill: #9ca7b8; font-size: 11px; }
-
-.donut {
-  width: 135px;
-  height: 135px;
-  border-radius: 50%;
-  margin: 20px auto;
-  background: conic-gradient(
-    #f2f4f8 0 43%,
-    #aeb8c8 43% 72%,
-    #737e8e 72% 89%,
-    #414a57 89%
-  );
-  display: grid;
-  place-items: center;
-  box-shadow: var(--raised);
-}
-
-.donut-inner {
-  width: 91px;
-  height: 91px;
-  border-radius: 50%;
-  background: var(--card);
-  box-shadow: var(--pressed);
-  display: grid;
-  place-content: center;
-  text-align: center;
-}
-
-.donut-inner strong { font-size: 21px; }
-.donut-inner small { color: var(--muted); }
-
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; min-width: 510px; }
-th, td {
-  text-align: left;
-  padding: 14px 10px;
-  border-bottom: 1px solid var(--edge);
-  font-size: 12px;
-}
-th { color: var(--muted); font-size: 10px; }
-td { color: #e0e5ed; }
-
-.badge {
-  display: inline-block;
-  padding: 6px 9px;
-  border-radius: 8px;
-  background: #3b434f;
-  font-size: 10px;
-}
-
-.page { display: none; }
-.page.active { display: block; }
-
-.tool-list { display: grid; gap: 12px; }
-.tool-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 14px;
-  border-radius: 13px;
-  background: var(--bg);
-  box-shadow: var(--pressed);
-  font-size: 12px;
-}
-
-.notice {
-  padding: 13px;
-  border-radius: 12px;
-  background: #303640;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.6;
-  margin-bottom: 18px;
-}
-
-.quick-grid {
-  display: grid;
-  grid-template-columns: repeat(2,minmax(0,1fr));
-  gap: 13px;
-}
-
-.quick {
-  padding: 18px;
-  text-align: left;
-  color: white;
-  background: var(--card);
-  border: 1px solid var(--edge);
-  border-radius: 15px;
-  box-shadow: var(--raised);
-}
-
-.quick:active { box-shadow: var(--pressed); }
-.quick span { font-size: 22px; display: block; margin-bottom: 10px; }
-.quick small { display: block; color: var(--muted); margin-top: 7px; }
-
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: 20px;
-  transform: translateX(-50%);
-  background: #f0f3f8;
-  color: #20252d;
-  border-radius: 12px;
-  padding: 13px 18px;
-  font-size: 12px;
-  box-shadow: var(--raised);
-  display: none;
-  z-index: 10;
-  max-width: 90%;
-}
-
-.toast.show { display: block; }
-#menuBtn { display: none; }
-
-@media(max-width:1000px) {
-  .metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
-  .grid { grid-template-columns: 1fr; }
-}
-
-@media(max-width:720px) {
-  .app { grid-template-columns: 1fr; }
-  .sidebar {
-    display: none;
-    border-right: 0;
-    border-bottom: 1px solid var(--edge);
-  }
-  .sidebar.open { display: flex; }
-  main { padding: 19px 14px 35px; }
-  .topbar { flex-wrap: wrap; margin-bottom: 23px; }
-  #menuBtn { display: inline-block; }
-  .search { max-width: 100%; }
-  .welcome { align-items: flex-start; flex-wrap: wrap; }
-  .metrics { gap: 12px; }
-  .card { padding: 15px; }
-  .metric-value { font-size: 24px; }
-}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-
 <body>
-<div class="app">
 
-<aside class="sidebar" id="sidebar">
-  <div class="brand"><div class="logo">I</div><div>Inflow<small style="display:block;font-size:10px;letter-spacing:3px">STUDIO</small></div></div>
-
-  <div class="workspace">
-    <strong>◉ &nbsp; Inflow Channel</strong>
-    <div class="muted" style="margin-top:6px">Creator workspace</div>
-  </div>
-
-  <div>
-    <div class="nav-label">MAIN MENU</div>
-    <button class="nav active" data-page="Overview">◫ Overview</button>
-    <button class="nav" data-page="Content">▶ Content</button>
-    <button class="nav" data-page="Analytics">▥ Analytics</button>
-    <button class="nav" data-page="Comments">▤ Comments</button>
-    <button class="nav" data-page="Audience">♙ Audience</button>
-    <button class="nav" data-page="Monetization">₹ Monetization</button>
-    <button class="nav" data-page="Copyright">© Copyright</button>
-  </div>
-
-  <div>
-    <div class="nav-label">PREFERENCES</div>
-    <button class="nav" data-page="Settings">⚙ Settings</button>
-  </div>
-
-  <div class="workspace">
-    <strong>Eye-comfort mode</strong>
-    <p class="muted">Soft dark surfaces · White accents · 3D controls</p>
-  </div>
-</aside>
-
-<main>
-  <div class="topbar">
-    <div>
-      <button class="btn" id="menuBtn" aria-label="Toggle menu">☰</button>
-      <div class="muted" style="font-size:10px;letter-spacing:2px">CREATOR DASHBOARD</div>
-      <h1 id="pageTitle">Good evening, Creator ✦</h1>
-      <p class="subtitle" id="pageSubtitle">Your channel overview at a glance.</p>
-    </div>
-    <input class="search" id="search" placeholder="Search sample videos...">
-  </div>
-
-  <section class="page active" id="Overview">
-    <div class="welcome">
-      <div>
-        <h2>Channel overview</h2>
-        <p class="subtitle">Your studio, your progress.</p>
-      </div>
-      <button class="btn primary" data-action="Upload video">＋ Upload video</button>
-    </div>
-
-    <div class="notice">
-      Preview mode: numbers and videos below are sample data. Live Inflow data and admin actions are not connected.
-    </div>
-
-    <div class="metrics">
-      <div class="card">
-        <div class="metric-label">Total views</div>
-        <div class="metric-value">128.4K</div>
-        <div class="metric-note">↗ Sample statistic</div>
-      </div>
-      <div class="card">
-        <div class="metric-label">Watch time</div>
-        <div class="metric-value">3.8K</div>
-        <div class="metric-note">Hours · sample</div>
-      </div>
-      <div class="card">
-        <div class="metric-label">Subscribers</div>
-        <div class="metric-value">8,642</div>
-        <div class="metric-note">Sample statistic</div>
-      </div>
-      <div class="card">
-        <div class="metric-label">Estimated revenue</div>
-        <div class="metric-value">₹2.4K</div>
-        <div class="metric-note">Illustrative only</div>
-      </div>
-    </div>
-
-    <div class="grid">
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Performance overview</h2>
-          <span class="badge">Last 7 days</span>
-        </div>
-        <svg class="chart" viewBox="0 0 600 230" role="img" aria-label="Sample performance chart">
-          <g stroke="#414955" stroke-dasharray="4 5">
-            <path d="M40 35H580 M40 80H580 M40 125H580 M40 170H580"/>
-          </g>
-          <path d="M40 175 L115 140 L190 151 L265 95 L340 112 L415 65 L490 84 L570 30 L570 190 L40 190Z" fill="#cbd3df" opacity=".10"/>
-          <path d="M40 175 L115 140 L190 151 L265 95 L340 112 L415 65 L490 84 L570 30" fill="none" stroke="#f0f3f8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <g class="chart-label">
-            <text x="40" y="215">Mon</text><text x="120" y="215">Tue</text>
-            <text x="200" y="215">Wed</text><text x="280" y="215">Thu</text>
-            <text x="360" y="215">Fri</text><text x="440" y="215">Sat</text>
-            <text x="530" y="215">Sun</text>
-          </g>
-        </svg>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head"><h2>Traffic sources</h2></div>
-        <div class="donut"><div class="donut-inner"><strong>100%</strong><small>Sample</small></div></div>
-        <div class="tool-list">
-          <div class="tool-row"><span>Browse features</span><strong>43%</strong></div>
-          <div class="tool-row"><span>Suggested videos</span><strong>29%</strong></div>
-          <div class="tool-row"><span>Search</span><strong>17%</strong></div>
-          <div class="tool-row"><span>Other</span><strong>11%</strong></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-head">
-        <h2>Latest content</h2>
-        <button class="btn" data-page-link="Content">View all</button>
-      </div>
-      <div class="table-wrap">
-        <table id="videoTable">
-          <thead><tr><th>Video</th><th>Views</th><th>Status</th><th>Action</th></tr></thead>
-          <tbody>
-            <tr><td>▶ Delivery company</td><td>12,800</td><td><span class="badge">Public</span></td><td><button class="btn" data-action="Edit Delivery company">Edit</button></td></tr>
-            <tr><td>♫ Khariyat — School Life</td><td>8,400</td><td><span class="badge">Public</span></td><td><button class="btn" data-action="Edit Khariyat">Edit</button></td></tr>
-            <tr><td>♥ Sad song</td><td>2,100</td><td><span class="badge">Short</span></td><td><button class="btn" data-action="Edit Sad song">Edit</button></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="panel" style="margin-top:20px">
-      <h2>Quick actions</h2>
-      <div class="quick-grid">
-        <button class="quick" data-page-link="Content"><span>▶</span><strong>Manage content</strong><small>Search sample videos</small></button>
-        <button class="quick" data-page-link="Comments"><span>▤</span><strong>Review comments</strong><small>Preview moderation</small></button>
-        <button class="quick" data-page-link="Analytics"><span>▥</span><strong>View analytics</strong><small>Explore sample metrics</small></button>
-        <button class="quick" data-page-link="Settings"><span>⚙</span><strong>Studio settings</strong><small>Change preview switches</small></button>
-      </div>
-    </div>
-  </section>
-
-  <section class="page" id="Content">
-    <div class="panel">
-      <h2>Your content</h2>
-      <p class="subtitle">Search and test actions on sample entries.</p>
-      <input class="field" id="contentFilter" placeholder="Filter by video title...">
-      <div class="tool-list" id="contentList" style="margin-top:15px">
-        <div class="tool-row"><span>▶ Delivery company<br><small class="muted">Sample video</small></span><span class="badge">Public</span><button class="btn" data-action="Edit Delivery company">Edit</button></div>
-        <div class="tool-row"><span>♫ Khariyat — School Life<br><small class="muted">Sample video</small></span><span class="badge">Public</span><button class="btn" data-action="Edit Khariyat">Edit</button></div>
-        <div class="tool-row"><span>♥ Sad song<br><small class="muted">Sample Short</small></span><span class="badge">Short</span><button class="btn" data-action="Edit Sad song">Edit</button></div>
-      </div>
-      <div style="margin-top:15px"><button class="btn primary" data-action="Upload video">＋ Upload video</button></div>
-    </div>
-  </section>
-
-  <section class="page" id="Analytics">
-    <div class="grid">
-      <div class="panel">
-        <h2>Performance metrics</h2>
-        <div class="tool-list">
-          <div class="tool-row"><span>Views</span><strong>128,400</strong></div>
-          <div class="tool-row"><span>Watch time</span><strong>3,800 hours</strong></div>
-          <div class="tool-row"><span>Average view duration</span><strong>2:41</strong></div>
-          <div class="tool-row"><span>Subscribers gained</span><strong>+642</strong></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h2>Date range</h2>
-        <p class="subtitle">Changes the preview label only.</p>
-        <select class="field" id="dateRange">
-          <option>Last 7 days</option>
-          <option>Last 28 days</option>
-          <option>Last 90 days</option>
-          <option>Lifetime</option>
-        </select>
-        <p class="subtitle" id="rangeMessage">Showing sample data for Last 7 days.</p>
-        <button class="btn" data-action="Export analytics">Export report</button>
-      </div>
-    </div>
-  </section>
-
-  <section class="page" id="Comments">
-    <div class="panel">
-      <h2>Comments to review</h2>
-      <p class="subtitle">Hide and Show buttons only change this preview.</p>
-      <div class="tool-list">
-        <div class="tool-row" data-comment><span>“Bahut achha video!”<br><small class="muted">@viewer_01 · Delivery company</small></span><span class="badge">Visible</span><button class="btn" data-moderate>Hide</button></div>
-        <div class="tool-row" data-comment><span>“Next video kab aayega?”<br><small class="muted">@viewer_02 · Khariyat</small></span><span class="badge">Visible</span><button class="btn" data-moderate>Hide</button></div>
-        <div class="tool-row" data-comment><span>“❤️❤️❤️”<br><small class="muted">@viewer_03 · Sad song</small></span><span class="badge">Visible</span><button class="btn" data-moderate>Hide</button></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="page" id="Audience">
-    <div class="grid">
-      <div class="panel"><h2>Audience snapshot</h2><div class="tool-list">
-        <div class="tool-row"><span>Returning viewers</span><strong>38%</strong></div>
-        <div class="tool-row"><span>New viewers</span><strong>62%</strong></div>
-        <div class="tool-row"><span>Subscribers</span><strong>8,642</strong></div>
-      </div></div>
-      <div class="panel"><h2>Viewer activity</h2><div class="tool-list">
-        <div class="tool-row"><span>Most active day</span><strong>Sunday</strong></div>
-        <div class="tool-row"><span>Top device</span><strong>Mobile</strong></div>
-        <div class="tool-row"><span>Top region</span><strong>India</strong></div>
-      </div></div>
-    </div>
-    <div class="notice">Audience statistics are illustrative sample data, not live analytics.</div>
-  </section>
-
-  <section class="page" id="Monetization">
-    <div class="panel"><h2>Monetization checklist</h2><p class="subtitle">Eligibility has not been verified.</p>
-      <div class="tool-list">
-        <div class="tool-row"><span>Channel details</span><span class="badge">Review needed</span></div>
-        <div class="tool-row"><span>Policies and guidelines</span><span class="badge">Review needed</span></div>
-        <div class="tool-row"><span>Payment account</span><span class="badge">Not connected</span></div>
-      </div>
-      <button class="btn primary" style="margin-top:15px" data-action="Check eligibility">Check eligibility</button>
-    </div>
-  </section>
-
-  <section class="page" id="Copyright">
-    <div class="panel"><h2>Copyright overview</h2><div class="tool-list">
-      <div class="tool-row"><span>Active copyright strikes</span><strong>0 sample</strong></div>
-      <div class="tool-row"><span>Content ID claims</span><strong>Not connected</strong></div>
-      <div class="tool-row"><span>Last review</span><strong>Not available</strong></div>
-    </div><button class="btn" style="margin-top:15px" data-action="Review copyright">Review status</button></div>
-  </section>
-
-  <section class="page" id="Settings">
-    <div class="grid">
-      <div class="panel"><h2>Studio preferences</h2><p class="subtitle">Switches update this page preview only.</p><div class="tool-list">
-        <div class="tool-row"><span>Desktop notifications</span><button class="btn" data-switch>On</button></div>
-        <div class="tool-row"><span>Weekly summary</span><button class="btn" data-switch>Off</button></div>
-        <div class="tool-row"><span>Compact tables</span><button class="btn" data-switch>Off</button></div>
-      </div></div>
-      <div class="panel"><h2>Security status</h2><div class="tool-list">
-        <div class="tool-row"><span>Admin authentication</span><span class="badge">Not connected</span></div>
-        <div class="tool-row"><span>Supabase connection</span><span class="badge">Not connected</span></div>
-      </div><p class="subtitle">Never put a Supabase service-role key in public HTML.</p></div>
-    </div>
-  </section>
-
-  <div class="notice" style="margin-top:22px">
-    Demo dashboard only. Real video management, comments, subscriber counts and analytics require secure backend integration and admin permissions.
-  </div>
-</main>
+<div id="adminLogin">
+  <form class="login-card" id="loginForm">
+    <div class="login-brand">inflow<span style="color:var(--mint)">.</span> Studio</div>
+    <div class="login-sub">Admin sign-in required to open your creator dashboard.</div>
+    <label for="adminEmail">Admin email</label>
+    <input id="adminEmail" type="email" value="mantosh882512@gmail.com" autocomplete="username" required>
+    <label for="adminPassword">Password</label>
+    <input id="adminPassword" type="password" autocomplete="current-password" minlength="8" required placeholder="Enter your password">
+    <button id="loginButton" type="submit">Sign in securely</button>
+    <div id="loginMessage" role="status" aria-live="polite"></div>
+  </form>
 </div>
 
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
-
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="brand"><div class="brandmark">i</div><div class="brandname">inflow<span style="color:var(--mint)">.</span><small>CREATOR STUDIO</small></div></div>
+<div class="workspace"><div class="avatar">I</div><div><strong>Inflow Channel</strong><span>Creator workspace</span></div><span style="margin-left:auto">⌄</span></div>
+<div><div class="navlabel">WORKSPACE</div>
+<button class="nav active" data-page="Overview"><span class="ico">◫</span> Overview</button><button class="nav" data-page="Content"><span class="ico">▣</span> Content <span class="count">24</span></button><button class="nav" data-page="Analytics"><span class="ico">⌁</span> Analytics</button><button class="nav" data-page="Comments"><span class="ico">▤</span> Comments <span class="count">8</span></button><button class="nav" data-page="Audience"><span class="ico">♙</span> Audience</button></div>
+<div><div class="navlabel">MANAGE</div><button class="nav" data-page="Monetization"><span class="ico">◇</span> Monetization</button><button class="nav" data-page="Copyright"><span class="ico">◈</span> Copyright</button><button class="nav" data-page="Settings"><span class="ico">⚙</span> Settings</button></div>
+<div class="sidebar-bottom"><div class="helpbox"><strong>✦ Creator resources</strong><p>Ideas and tips to help grow your Inflow channel.</p><button data-action="Creator resources">Explore resources ↗</button></div></div>
+</aside>
+<main>
+<header class="topbar"><div style="display:flex;gap:12px;align-items:center"><button class="iconbtn mobile-menu" id="menuBtn">☰</button><div><div class="eyebrow">YOUR CREATOR SPACE</div><h1 id="pageTitle">Good evening, Creator ✦</h1><p class="subtitle" id="pageSubtitle">Here’s what’s happening with your channel today.</p></div></div><div class="actions"><input class="search" id="search" placeholder="⌕  Search content..."><button class="iconbtn" data-action="Notifications" aria-label="Notifications">♧<span class="dot"></span></button><div class="profile"><div class="profilepic">I</div><div><strong style="font-size:12px">Inflow Admin</strong><small>Preview mode</small></div></div></div></header>
+<section id="overview" class="page active">
+<div class="welcome"><div><h2>Channel overview</h2><p class="subtitle">Your performance at a glance</p></div><button class="primary" data-action="Upload video">＋ &nbsp; Upload video</button></div>
+<div class="notice">Preview mode · These are sample numbers, not live Inflow or Supabase data.</div>
+<div class="metrics">
+<article class="card"><div class="metric-head"><span class="metric-label">Total views</span><span class="metric-icon mint">◉</span></div><div class="metric-value">128.4K</div><div class="metric-foot"><span class="up">↗ 18.6%</span> vs. last 28 days</div></article>
+<article class="card"><div class="metric-head"><span class="metric-label">Watch time</span><span class="metric-icon blue">◷</span></div><div class="metric-value">3.8K <span style="font-size:13px;color:var(--muted)">hrs</span></div><div class="metric-foot"><span class="up">↗ 12.4%</span> vs. last 28 days</div></article>
+<article class="card"><div class="metric-head"><span class="metric-label">Subscribers</span><span class="metric-icon violet">♙</span></div><div class="metric-value">8,642</div><div class="metric-foot"><span class="up">↗ 8.2%</span> vs. last 28 days</div></article>
+<article class="card"><div class="metric-head"><span class="metric-label">Estimated revenue</span><span class="metric-icon orange">₹</span></div><div class="metric-value">₹12,480</div><div class="metric-foot"><span class="up">↗ 6.8%</span> vs. last 28 days</div></article></div>
+<div class="content-grid">
+<article class="card"><div class="card-title"><div><h2>Performance</h2><p>Views and watch time · last 7 days</p></div><button class="softbtn" data-action="Date range">Last 7 days⌄</button></div><div class="chart-legend"><span><i class="legend-dot" style="background:var(--mint)"></i>Views</span><span><i class="legend-dot" style="background:var(--blue)"></i>Watch time</span></div>
+<svg class="chart" viewBox="0 0 600 190" preserveAspectRatio="none" role="img" aria-label="Sample performance chart"><defs><linearGradient id="fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#63e6be" stop-opacity=".24"/><stop offset="1" stop-color="#63e6be" stop-opacity="0"/></linearGradient></defs><g class="gridline"><path d="M35 25H590M35 65H590M35 105H590M35 145H590"/></g><g><text x="0" y="28">4k</text><text x="0" y="68">3k</text><text x="0" y="108">2k</text><text x="0" y="148">1k</text><text x="35" y="180">Mon</text><text x="125" y="180">Tue</text><text x="215" y="180">Wed</text><text x="305" y="180">Thu</text><text x="395" y="180">Fri</text><text x="485" y="180">Sat</text><text x="565" y="180">Sun</text></g><path class="area" d="M35 125 L125 92 L215 108 L305 59 L395 76 L485 38 L575 48 L575 155 L35 155Z"/><path class="line" d="M35 125 L125 92 L215 108 L305 59 L395 76 L485 38 L575 48"/><path class="line2" d="M35 143 L125 128 L215 135 L305 111 L395 121 L485 94 L575 103"/><circle cx="485" cy="38" r="5" fill="#63e6be" stroke="#252c3a" stroke-width="3"/></svg></article>
+<article class="card"><div class="card-title"><div><h2>Traffic sources</h2><p>Where viewers find your content</p></div><button class="softbtn" data-action="Traffic details">Details ↗</button></div><div class="donut-wrap"><div class="donut"><div class="donut-center"><strong>128K</strong><span>Total views</span></div></div><div class="legend"><div class="legend-row"><i style="background:var(--mint)"></i><span>Browse</span><b>43%</b></div><div class="legend-row"><i style="background:var(--blue)"></i><span>Suggested</span><b>29%</b></div><div class="legend-row"><i style="background:var(--violet)"></i><span>Search</span><b>17%</b></div><div class="legend-row"><i style="background:#514052"></i><span>Other</span><b>11%</b></div></div></div></article></div>
+<article class="card tablecard"><div class="tablehead"><div><h2 style="font-size:15px;margin:0 0 6px">Your latest content</h2><p class="subtitle">Recent uploads · sample records</p></div><button class="softbtn" data-page-link="Content">View all ↗</button></div><div class="tablewrap"><table><thead><tr><th>Video</th><th>Visibility</th><th>Views</th><th>Comments</th><th>Likes</th></tr></thead><tbody id="videoRows"><tr><td><div class="video-cell"><div class="thumb one">▶</div><div><strong>Delivery company</strong><small>Uploaded recently</small></div></div></td><td><span class="status">Public</span></td><td>12,840</td><td>186</td><td>1,204</td></tr><tr><td><div class="video-cell"><div class="thumb two">♫</div><div><strong>Khariyat — School Life</strong><small>Uploaded recently</small></div></div></td><td><span class="status">Public</span></td><td>8,420</td><td>94</td><td>876</td></tr><tr><td><div class="video-cell"><div class="thumb three">▶</div><div><strong>Sad song ❤️</strong><small>Uploaded recently</small></div></div></td><td><span class="status review">Processing</span></td><td>2,105</td><td>32</td><td>219</td></tr></tbody></table></div></article>
+<div class="bottom-grid"><article class="card"><div class="card-title"><div><h2>Recent activity</h2><p>Latest channel updates · sample</p></div><button class="softbtn" data-action="Activity">See all</button></div><div class="activity"><div class="activity-icon mint">♡</div><div><strong>Your video got 100 new likes</strong><p>“Delivery company” is getting noticed by viewers.</p><time>18 minutes ago</time></div></div><div class="activity"><div class="activity-icon blue">♙</div><div><strong>New subscribers joined</strong><p>Your community is growing. Keep it going!</p><time>2 hours ago</time></div></div><div class="activity"><div class="activity-icon violet">▤</div><div><strong>8 comments need your attention</strong><p>Join the conversation with your audience.</p><time>Today</time></div></div></article>
+<article class="card"><div class="card-title"><div><h2>Quick actions</h2><p>Common creator tasks</p></div></div><div class="quick-grid"><button class="quick" data-action="Upload video"><span class="mint">↥</span><strong>Upload video</strong><small>Share something new</small></button><button class="quick" data-page-link="Comments"><span class="blue">▤</span><strong>Comments</strong><small>View conversations</small></button><button class="quick" data-page-link="Analytics"><span class="violet">⌁</span><strong>Analytics</strong><small>Explore performance</small></button><button class="quick" data-page-link="Settings"><span class="orange">⚙</span><strong>Settings</strong><small>Configure studio</small></button></div></article></div>
+</section>
+<section id="genericPage" class="page"><div class="welcome"><div><h2 id="genericTitle">Content</h2><p class="subtitle" id="genericSubtitle">Manage your creator workspace.</p></div></div><div class="notice">Preview only · This section is not connected to live Supabase data or real admin actions yet.</div><div class="card"><div class="placeholder" id="genericBody">Connect a secure backend to show real information here.</div></div></section>
+</main></div><div class="toast" id="toast" role="status"></div>
 <script>
-const toast = document.getElementById('toast');
-let toastTimer;
+const toast=document.getElementById('toast');let timer;
+function notify(s){toast.textContent=s;toast.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>toast.classList.remove('show'),2400)}
+const descriptions={Content:'Review videos and Shorts published to Inflow.',Analytics:'Track views, watch time, and audience engagement.',Comments:'Review and respond to community comments.',Audience:'Understand your viewers and subscriber community.',Monetization:'Monetization tools and eligibility overview.',Copyright:'Review copyright notices and content claims.',Settings:'Configure Studio preferences and security.'};
+function showPage(name){document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));const overview=name==='Overview';document.getElementById('overview').classList.toggle('active',overview);document.getElementById('genericPage').classList.toggle('active',!overview);document.getElementById('pageTitle').textContent=overview?'Good evening, Creator ✦':name+' · Inflow Studio';document.getElementById('pageSubtitle').textContent=overview?'Here’s what’s happening with your channel today.':(descriptions[name]||'Manage your creator workspace.');document.getElementById('genericTitle').textContent=name;document.getElementById('genericSubtitle').textContent=descriptions[name]||'Manage your creator workspace.';document.getElementById('genericBody').textContent=name==='Content'?'The content list will be connected to your secure backend in the next step. Sample uploads are shown on the Overview page.':'Connect a secure backend to display '+name.toLowerCase()+' data and enable authorized actions.';if(innerWidth<=720)document.getElementById('sidebar').classList.remove('open');}
+document.querySelectorAll('.nav').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
+document.querySelectorAll('[data-page-link]').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.pageLink)));
+document.querySelectorAll('[data-action]').forEach(b=>b.addEventListener('click',()=>notify(b.dataset.action+' is a preview action. Secure backend connection is needed.')));
+document.getElementById('menuBtn').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
+document.getElementById('search').addEventListener('input',e=>{const q=e.target.value.toLowerCase();document.querySelectorAll('#videoRows tr').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(q)?'':'none')});
 
-function notify(message) {
-  toast.textContent = message;
-  toast.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+// Supabase Admin Authentication — only the publishable key belongs in this file.
+const SUPABASE_URL = 'https://xqthtwilhgokyzcxrmqy.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'PASTE_YOUR_SB_PUBLISHABLE_KEY_HERE';
+const ADMIN_EMAIL = 'mantosh882512@gmail.com';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const loginForm = document.getElementById('loginForm');
+const loginMessage = document.getElementById('loginMessage');
+const loginButton = document.getElementById('loginButton');
+let authCheckInProgress = false;
+function setLoginMessage(message, success=false){ loginMessage.textContent=message; loginMessage.style.color=success?'#f18abf':'#f5a6bd'; }
+function showAdminDashboard(){ document.body.classList.add('admin-authenticated'); }
+function showAdminLogin(){ document.body.classList.remove('admin-authenticated'); }
+async function verifyAdminSession(){
+  if(authCheckInProgress) return false;
+  authCheckInProgress=true;
+  try {
+    const {data:{session},error:sessionError}=await supabaseClient.auth.getSession();
+    if(sessionError) throw sessionError;
+    if(!session){showAdminLogin();return false;}
+    const email=(session.user.email||'').toLowerCase();
+    if(email!==ADMIN_EMAIL.toLowerCase()) throw new Error('This account is not authorized as Inflow Studio admin.');
+    const {data,error}=await supabaseClient.functions.invoke('admin-auth',{
+      body:{},
+      headers:{Authorization:'Bearer '+session.access_token}
+    });
+    if(error) throw new Error(error.message||'Admin verification failed.');
+    if(!data || data.success!==true || data.isAdmin!==true || data.user?.id!==session.user.id)
+      throw new Error('Admin access was not approved. Check studio_admins and the admin-auth function.');
+    showAdminDashboard();
+    setLoginMessage('');
+    return true;
+  } catch(err){
+    showAdminLogin();
+    setLoginMessage(err.message||'Sign-in verification failed.');
+    try { await supabaseClient.auth.signOut(); } catch(_) {}
+    return false;
+  } finally { authCheckInProgress=false; }
 }
-
-function showPage(name) {
-  document.querySelectorAll('.page').forEach(page => {
-    page.classList.toggle('active', page.id === name);
-  });
-
-  document.querySelectorAll('.nav[data-page]').forEach(button => {
-    button.classList.toggle('active', button.dataset.page === name);
-  });
-
-  document.getElementById('pageTitle').textContent =
-    name === 'Overview' ? 'Good evening, Creator ✦' : name + ' · Inflow Studio';
-
-  document.getElementById('pageSubtitle').textContent =
-    name === 'Overview'
-      ? 'Your channel overview at a glance.'
-      : 'Preview mode · ' + name + ' tools';
-
-  document.getElementById('sidebar').classList.remove('open');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-document.querySelectorAll('[data-page]').forEach(button => {
-  button.addEventListener('click', () => showPage(button.dataset.page));
+loginForm.addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  const email=document.getElementById('adminEmail').value.trim().toLowerCase();
+  const password=document.getElementById('adminPassword').value;
+  if(email!==ADMIN_EMAIL.toLowerCase()){setLoginMessage('Only the configured admin email can sign in.');return;}
+  loginButton.disabled=true;loginButton.textContent='Verifying…';setLoginMessage('Signing in securely…',true);
+  try {
+    const {error}=await supabaseClient.auth.signInWithPassword({email,password});
+    if(error) throw error;
+    const ok=await verifyAdminSession();
+    if(ok) document.getElementById('adminPassword').value='';
+  } catch(err){setLoginMessage(err.message||'Login failed.');showAdminLogin();}
+  finally {loginButton.disabled=false;loginButton.textContent='Sign in securely';}
 });
-
-document.querySelectorAll('[data-page-link]').forEach(button => {
-  button.addEventListener('click', () => showPage(button.dataset.pageLink));
+supabaseClient.auth.onAuthStateChange((event,session)=>{
+  if(event==='SIGNED_OUT'){showAdminLogin();}
+  else if(event==='SIGNED_IN' && session){setTimeout(()=>verifyAdminSession(),0);}
 });
+// Add logout control without changing the dashboard layout.
+const logoutButton=document.createElement('button');
+logoutButton.type='button';logoutButton.className='softbtn';logoutButton.textContent='Log out';logoutButton.setAttribute('aria-label','Log out of admin account');
+logoutButton.addEventListener('click',async()=>{await supabaseClient.auth.signOut();showAdminLogin();setLoginMessage('You have been signed out.',true);});
+document.querySelector('.actions').appendChild(logoutButton);
+verifyAdminSession();
 
-document.getElementById('menuBtn').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('open');
-});
-
-document.getElementById('search').addEventListener('input', event => {
-  const query = event.target.value.toLowerCase();
-
-  document.querySelectorAll('#videoTable tbody tr').forEach(row => {
-    row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
-  });
-
-  const filter = document.getElementById('contentFilter');
-  if (filter) filter.value = query;
-
-  document.querySelectorAll('#contentList .tool-row').forEach(row => {
-    row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
-  });
-});
-
-document.getElementById('contentFilter').addEventListener('input', event => {
-  const query = event.target.value.toLowerCase();
-
-  document.querySelectorAll('#contentList .tool-row').forEach(row => {
-    row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
-  });
-});
-
-document.getElementById('dateRange').addEventListener('change', event => {
-  document.getElementById('rangeMessage').textContent =
-    'Showing sample data for ' + event.target.value + '.';
-});
-
-document.addEventListener('click', event => {
-  const action = event.target.closest('[data-action]');
-
-  if (action) {
-    notify(action.dataset.action + ' — preview only; backend is not connected.');
-    return;
-  }
-
-  const moderation = event.target.closest('[data-moderate]');
-
-  if (moderation) {
-    const row = moderation.closest('[data-comment]');
-    const badge = row.querySelector('.badge');
-    const hide = moderation.textContent.trim() === 'Hide';
-
-    moderation.textContent = hide ? 'Show' : 'Hide';
-    badge.textContent = hide ? 'Hidden' : 'Visible';
-    notify(hide ? 'Comment hidden in preview.' : 'Comment shown in preview.');
-    return;
-  }
-
-  const toggle = event.target.closest('[data-switch]');
-
-  if (toggle) {
-    const turnOn = toggle.textContent.trim() !== 'On';
-    toggle.textContent = turnOn ? 'On' : 'Off';
-    toggle.setAttribute('aria-pressed', String(turnOn));
-    notify('Preview preference updated.');
-  }
-});
 </script>
-</body>
-</html>
+</body></html>
