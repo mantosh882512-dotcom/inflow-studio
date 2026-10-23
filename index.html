@@ -52,6 +52,10 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
 #adminLogin label{display:block;font-size:12px;color:var(--muted);margin:15px 0 7px}
 #adminLogin input{width:100%;padding:13px 14px;border:1px solid var(--edge);border-radius:12px;background:#252027;box-shadow:var(--in);color:var(--text);outline:none}
 #adminLogin input:focus{border-color:#f18abf}#adminLogin button{width:100%;margin-top:20px;padding:13px;border:0;border-radius:12px;background:linear-gradient(145deg,#f5b0d3,#df76ad);color:#382331;font-weight:850}
+#adminLogin .login-divider{display:flex;align-items:center;gap:12px;margin-top:16px;color:var(--muted);font-size:11px}
+#adminLogin .login-divider:before,#adminLogin .login-divider:after{content:"";height:1px;background:var(--edge);flex:1}
+#adminLogin button.google-login{margin-top:12px;background:#f8f5f8;color:#252027;border:1px solid #ded6df}
+#adminLogin button:disabled{opacity:.65;cursor:wait}
 #loginMessage{font-size:12px;line-height:1.5;color:#f5a6bd;margin-top:14px;min-height:18px;overflow-wrap:anywhere}
 .app{display:none}body.admin-authenticated .app{display:grid}body.admin-authenticated #adminLogin{display:none}
 
@@ -68,7 +72,9 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
     <input id="adminEmail" type="email" value="mantosh882512@gmail.com" autocomplete="username" required>
     <label for="adminPassword">Password</label>
     <input id="adminPassword" type="password" autocomplete="current-password" minlength="8" required placeholder="Enter your password">
-    <button id="loginButton" type="submit">Sign in securely</button>
+    <button id="loginButton" type="submit">Sign in with email</button>
+    <div class="login-divider" aria-hidden="true"><span>OR</span></div>
+    <button id="googleLoginButton" type="button" class="google-login">Continue with Google</button>
     <div id="loginMessage" role="status" aria-live="polite"></div>
   </form>
 </div>
@@ -115,12 +121,13 @@ document.getElementById('search').addEventListener('input',e=>{const q=e.target.
 
 // Supabase Admin Authentication — only the publishable key belongs in this file.
 const SUPABASE_URL = 'https://xqthtwilhgokyzcxrmqy.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_VysPjJ9VsyRKj_tIwA7Gjw_xOlWNFbR';
+const SUPABASE_PUBLISHABLE_KEY = 'PASTE_YOUR_SB_PUBLISHABLE_KEY_HERE';
 const ADMIN_EMAIL = 'mantosh882512@gmail.com';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 const loginForm = document.getElementById('loginForm');
 const loginMessage = document.getElementById('loginMessage');
 const loginButton = document.getElementById('loginButton');
+const googleLoginButton = document.getElementById('googleLoginButton');
 let authCheckInProgress = false;
 function setLoginMessage(message, success=false){ loginMessage.textContent=message; loginMessage.style.color=success?'#f18abf':'#f5a6bd'; }
 function showAdminDashboard(){ document.body.classList.add('admin-authenticated'); }
@@ -151,6 +158,22 @@ async function verifyAdminSession(){
     return false;
   } finally { authCheckInProgress=false; }
 }
+googleLoginButton.addEventListener('click',async()=>{
+  googleLoginButton.disabled=true;
+  googleLoginButton.textContent='Connecting to Google…';
+  setLoginMessage('Redirecting to Google sign-in…',true);
+  try {
+    const {error}=await supabaseClient.auth.signInWithOAuth({
+      provider:'google',
+      options:{redirectTo:window.location.href.split('#')[0].split('?')[0]}
+    });
+    if(error) throw error;
+  } catch(err) {
+    setLoginMessage((err.message||'Google sign-in failed.')+' Check that Google provider is enabled in Supabase.');
+    googleLoginButton.disabled=false;
+    googleLoginButton.textContent='Continue with Google';
+  }
+});
 loginForm.addEventListener('submit',async(e)=>{
   e.preventDefault();
   const email=document.getElementById('adminEmail').value.trim().toLowerCase();
@@ -163,7 +186,7 @@ loginForm.addEventListener('submit',async(e)=>{
     const ok=await verifyAdminSession();
     if(ok) document.getElementById('adminPassword').value='';
   } catch(err){setLoginMessage(err.message||'Login failed.');showAdminLogin();}
-  finally {loginButton.disabled=false;loginButton.textContent='Sign in securely';}
+  finally {loginButton.disabled=false;loginButton.textContent='Sign in with email';}
 });
 supabaseClient.auth.onAuthStateChange((event,session)=>{
   if(event==='SIGNED_OUT'){showAdminLogin();}
