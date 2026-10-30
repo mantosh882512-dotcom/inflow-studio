@@ -126,6 +126,24 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
 </div>
 <div class="card"><div class="card-title"><div><h2>Platform data</h2><p>Additional database counters</p></div></div>
 <div class="admin-details"><div><span>View events</span><strong id="adminViewEvents">—</strong></div><div><span>Subscription records</span><strong id="adminSubscriptions">—</strong></div><div><span>Profiles</span><strong id="adminProfiles">—</strong></div></div></div>
+
+<div class="metrics admin-metrics" style="margin-top:18px">
+  <article class="card"><div class="metric-label">Pending video reports</div><div class="metric-value" id="adminPendingReports">—</div><small>Reports awaiting review</small></article>
+  <article class="card"><div class="metric-label">Shorts</div><div class="metric-value" id="adminShorts">—</div><small>Short video records</small></article>
+  <article class="card"><div class="metric-label">Long videos</div><div class="metric-value" id="adminLongVideos">—</div><small>Non-Short video records</small></article>
+  <article class="card"><div class="metric-label">Published videos</div><div class="metric-value" id="adminPublishedVideos">—</div><small>Videos with published status</small></article>
+</div>
+
+<div class="content-grid" style="margin-top:18px">
+  <article class="card tablecard">
+    <div class="tablehead"><div><h2 style="font-size:15px;margin:0 0 6px">Top Creators</h2><p class="subtitle">Ranked by video views</p></div></div>
+    <div class="tablewrap"><table><thead><tr><th>Creator</th><th>Videos</th><th>Views</th><th>Subscribers</th></tr></thead><tbody id="adminTopCreators"><tr><td colspan="4">Waiting for live data…</td></tr></tbody></table></div>
+  </article>
+  <article class="card tablecard">
+    <div class="tablehead"><div><h2 style="font-size:15px;margin:0 0 6px">Top Videos</h2><p class="subtitle">Ranked by displayed views</p></div></div>
+    <div class="tablewrap"><table><thead><tr><th>Video</th><th>Type</th><th>Views</th><th>Likes</th></tr></thead><tbody id="adminTopVideos"><tr><td colspan="4">Waiting for live data…</td></tr></tbody></table></div>
+  </article>
+</div>
 </section>
 </main></div><div class="toast" id="toast" role="status"></div>
 <script>
@@ -184,6 +202,25 @@ async function loadAdminMetrics(accessToken){
     document.getElementById('adminViewEvents').textContent=formatAdminNumber(m.totalViewEvents);
     document.getElementById('adminSubscriptions').textContent=formatAdminNumber(m.totalSubscriptions);
     document.getElementById('adminProfiles').textContent=formatAdminNumber(m.totalProfiles);
+    document.getElementById('adminPendingReports').textContent=formatAdminNumber(m.pendingVideoReports);
+    document.getElementById('adminShorts').textContent=formatAdminNumber(m.shortsCount);
+    document.getElementById('adminLongVideos').textContent=formatAdminNumber(m.longVideosCount);
+    document.getElementById('adminPublishedVideos').textContent=formatAdminNumber(m.publishedVideosCount);
+
+    const escapeAdminHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[char]));
+
+    const creators = Array.isArray(m.topCreators) ? m.topCreators : [];
+    document.getElementById('adminTopCreators').innerHTML = creators.length
+      ? creators.map(c => `<tr><td>${escapeAdminHtml(c.name)}</td><td>${formatAdminNumber(c.videoCount)}</td><td>${formatAdminNumber(c.views)}</td><td>${formatAdminNumber(c.subscribers)}</td></tr>`).join('')
+      : '<tr><td colspan="4">No creator data available.</td></tr>';
+
+    const videos = Array.isArray(m.topVideos) ? m.topVideos : [];
+    document.getElementById('adminTopVideos').innerHTML = videos.length
+      ? videos.map(v => `<tr><td>${escapeAdminHtml(v.title)}<br><small>${escapeAdminHtml(v.channelName)}</small></td><td>${v.isShort ? 'Short' : 'Long'}</td><td>${formatAdminNumber(v.views)}</td><td>${formatAdminNumber(v.likes)}</td></tr>`).join('')
+      : '<tr><td colspan="4">No video data available.</td></tr>';
+
     status.textContent='Live data loaded · '+new Date(data.generatedAt||Date.now()).toLocaleString();
   }catch(err){
     status.textContent='Could not load live data: '+(err.message||'Unknown error');

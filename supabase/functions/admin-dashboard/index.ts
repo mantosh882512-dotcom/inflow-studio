@@ -87,6 +87,7 @@ Deno.serve(async (req: Request) => {
       viewEventsResult,
       subscriptionsResult,
       videoReportsResult,
+          pendingVideoReportsResult,
       channelReportsResult,
       ] = await Promise.all([
       adminClient.from("profiles").select("*", { count: "exact", head: true }),
@@ -94,6 +95,7 @@ Deno.serve(async (req: Request) => {
       adminClient.from("video_views").select("*", { count: "exact", head: true }),
       adminClient.from("subscriptions").select("*", { count: "exact", head: true }),
       adminClient.from("video_reports").select("*", { count: "exact", head: true }),
+          adminClient.from("video_reports").select("*", { count: "exact", head: true }).eq("status", "pending"),
       adminClient.from("channel_reports").select("*", { count: "exact", head: true }),
     ]);
 
@@ -103,6 +105,7 @@ Deno.serve(async (req: Request) => {
       viewEventsResult,
       subscriptionsResult,
       videoReportsResult,
+          pendingVideoReportsResult,
       channelReportsResult,
       ];
 
@@ -113,41 +116,151 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "Unable to load dashboard data" }, 500);
     }
 
-    // 4. Count distinct creators and sum displayed video views.
-    const creatorIds = new Set<string>();
-    let displayedViews = 0;
+    // 4. Build creator and video performance metrics.
+      const creatorIds = new Set<string>();
+      let displayedViews = 0;
+      let shortsCount = 0;
+      let longVideosCount = 0;
+      let publishedVideosCount = 0;
 
-    const pageSize = 1000;
-    let offset = 0;
+      const creatorStats = new Map<string, {
+        videoCount: number;
+        views: number;
+        subscribers: number;
+        channelName: string;
+      }>();
 
-    while (true) {
-      const { data: videoPage, error: videoPageError } = await adminClient
-        .from("videos")
-        .select("id, user_id, views")
-        .order("id", { ascending: true })
-        .range(offset, offset + pageSize - 1);
+      const topVideos: Array<{
+        id: string;
+        title: string;
+        channelName: string;
+        views: number;
+        likes: number;
+        isShort: boolean;
+      }> = [];
 
-      if (videoPageError) {
-        console.error("Video metrics query failed:", videoPageError.message);
-        return jsonResponse({ error: "Unable to load video metrics" }, 500);
-      }
+      const pageSize = 1000;
+      let offset = 0;
 
-      for (const video of videoPage ?? []) {
-        if (video.user_id) {
-          creatorIds.add(String(video.user_id));
+      while (true) {
+        const { data: videoPage, error: videoPageError } = await adminClient
+          .from("videos")
+          .select("id, title, user_id, channel_name, views, likes, is_short, status")
+          .order("id", { ascending: true })
+          .range(offset, offset + pageSize - 1);
+
+        if (videoPageError) {
+          console.error("Video metrics query failed:", videoPageError.message);
+          return jsonResponse({ error: "Unable to load video metrics" }, 500);
         }
 
-        const views = Number(video.views ?? 0);
-        if (Number.isFinite(views)) {
-          displayedViews += views;
+        for (const video of videoPage ?? []) {
+          const views = Number(video.views ?? 0);
+          const likes = Number(video.likes ?? 0);
+          const ownerId = video.user_id ? String(video.user_id) : "";
+          const isShort = video.is_short === true;
+
+          if (ownerId) {
+            creatorIds.add(ownerId);
+            const stats = creatorStats.get(ownerId) ?? {
+              videoCount: 0,
+              views: 0,
+              subscribers: 0,
+              channelName: String(video.channel_name ?? ""),
+            };
+            stats.videoCount++;
+            if (Number.isFinite(views)) stats.views += views;
+            if (!stats.channelName && video.channel_name) {
+              stats.channelName = String(video.channel_name);
+            }
+            creatorStats.set(ownerId, stats);
+          }
+
+          if (Number.isFinite(views)) displayedViews += views;
+          if (isShort) shortsCount++;
+          else longVideosCount++;
+          if (video.status === "published") publishedVideosCount++;
+
+          topVideos.push({
+            id: String(video.id),
+            title: String(video.title ?? "Untitled"),
+            channelName: String(video.channel_name ?? ""),
+            views: Number.isFinite(views) ? views : 0,
+            likes: Number.isFinite(likes) ? likes : 0,
+            isShort,
+          });
         }
+
+        if (!videoPage || videoPage.length < pageSize) break;
+        offset += pageSize;
       }
 
-      if (!videoPage || videoPage.length < pageSize) break;
-      offset += pageSize;
-    }
+      // Resolve creator display names.
+      const profileNames = new Map<string, string>();
+      let profileOffset = 0;
 
-    // 5. Count all Auth users using pagination.
+      while (true) {
+        const { data, error } = await adminClient
+          .from("profiles")
+          .select("id, full_name, username")
+          .order("id", { ascending: true })
+          .range(profileOffset, profileOffset + pageSize - 1);
+
+        if (error) {
+          console.error("Creator profiles query failed:", error.message);
+          return jsonResponse({ error: "Unable to load creator profiles" }, 500);
+        }
+
+        for (const profile of data ?? []) {
+          profileNames.set(
+            String(profile.id),
+            String(profile.full_name || profile.username || ""),
+          );
+        }
+
+        if (!data || data.length < pageSize) break;
+        profileOffset += pageSize;
+      }
+
+      // Aggregate subscriber counts.
+      let subscriptionOffset = 0;
+
+      while (true) {
+        const { data, error } = await adminClient
+          .from("subscriptions")
+          .select("creator_id")
+          .order("id", { ascending: true })
+          .range(subscriptionOffset, subscriptionOffset + pageSize - 1);
+
+        if (error) {
+          console.error("Creator subscriptions query failed:", error.message);
+          return jsonResponse({ error: "Unable to load creator subscriptions" }, 500);
+        }
+
+        for (const subscription of data ?? []) {
+          const stats = creatorStats.get(String(subscription.creator_id ?? ""));
+          if (stats) stats.subscribers++;
+        }
+
+        if (!data || data.length < pageSize) break;
+        subscriptionOffset += pageSize;
+      }
+
+      const topCreators = Array.from(creatorStats.entries())
+        .map(([userId, stats]) => ({
+          userId,
+          name: profileNames.get(userId) || stats.channelName || "Unknown creator",
+          videoCount: stats.videoCount,
+          views: stats.views,
+          subscribers: stats.subscribers,
+        }))
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 10);
+
+      topVideos.sort((a, b) => b.views - a.views);
+      topVideos.splice(10);
+
+      // 5. Count all Auth users using pagination.
     let totalUsers = 0;
     let page = 1;
     const perPage = 1000;
@@ -184,8 +297,14 @@ Deno.serve(async (req: Request) => {
         displayedViews,
         totalSubscriptions: subscriptionsResult.count ?? 0,
         totalVideoReports: videoReportsResult.count ?? 0,
+              pendingVideoReports: pendingVideoReportsResult.count ?? 0,
         totalChannelReports: channelReportsResult.count ?? 0,
         videoCreators: creatorIds.size,
+        shortsCount,
+        longVideosCount,
+        publishedVideosCount,
+        topCreators,
+        topVideos,
       },
       generatedAt: new Date().toISOString(),
     });
