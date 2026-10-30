@@ -66,6 +66,20 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
 .admin-details strong{font-size:19px}
 @media(max-width:720px){.admin-metrics,.admin-details{grid-template-columns:repeat(2,minmax(0,1fr))}}
 [hidden]{display:none!important}
+
+/* Super Admin video preview modal */
+#adminVideoPreviewModal{position:fixed;inset:0;z-index:1000;display:none;place-items:center;padding:18px;background:rgba(10,7,12,.82);backdrop-filter:blur(5px)}
+#adminVideoPreviewModal.open{display:grid}
+#adminVideoPreviewModal .preview-card{width:min(100%,850px);max-height:92vh;overflow:auto;padding:20px;border:1px solid var(--edge);border-radius:20px;background:linear-gradient(145deg,#302932,#262129);box-shadow:var(--out)}
+#adminVideoPreviewModal .preview-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}
+#adminVideoPreviewModal .preview-head h2{font-size:16px;margin:0}
+#adminVideoPreviewModal .preview-player{width:100%;max-height:65vh;aspect-ratio:16/9;background:#100d12;border-radius:13px;box-shadow:var(--in);object-fit:contain}
+#adminVideoPreviewModal .preview-info{font-size:12px;color:var(--muted);line-height:1.6;margin-top:12px;overflow-wrap:anywhere}
+#adminVideoPreviewModal .preview-error{display:none;color:#f5a6bd;font-size:12px;margin-top:12px}
+.admin-preview-btn{border:1px solid #654057;background:linear-gradient(145deg,#3b2b39,#29212b);color:#f2b0d1;padding:8px 11px;border-radius:10px;box-shadow:var(--outsm);font-size:11px;white-space:nowrap}
+.admin-preview-btn:hover{transform:translateY(-1px)}
+@media(max-width:600px){#adminVideoPreviewModal{padding:9px}#adminVideoPreviewModal .preview-card{padding:13px;border-radius:15px}}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -184,8 +198,8 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
     </div>
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Video</th><th>Channel</th><th>Type</th><th>Visibility</th><th>Status</th><th>Views</th><th>Uploaded</th></tr></thead>
-        <tbody id="adminVideosRows"><tr><td colspan="7">Waiting for video data…</td></tr></tbody>
+        <thead><tr><th>Video</th><th>Channel</th><th>Type</th><th>Visibility</th><th>Status</th><th>Views</th><th>Uploaded</th><th>Visibility action</th></tr></thead>
+        <tbody id="adminVideosRows"><tr><td colspan="8">Waiting for video data…</td></tr></tbody>
       </table>
     </div>
     <div class="tablehead" style="margin-top:14px">
@@ -200,14 +214,27 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
     <div class="tablehead"><div><h2 style="font-size:15px;margin:0 0 6px">Reported Videos</h2><p class="subtitle">Community-submitted video reports</p></div></div>
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Video</th><th>Reason</th><th>Details</th><th>Report status</th><th>Reported at</th></tr></thead>
-        <tbody id="adminVideoReportsRows"><tr><td colspan="5">Waiting for report data…</td></tr></tbody>
+        <thead><tr><th>Video</th><th>Reason</th><th>Details</th><th>Report status</th><th>Reported at</th><th>Actions</th></tr></thead>
+        <tbody id="adminVideoReportsRows"><tr><td colspan="6">Waiting for report data…</td></tr></tbody>
       </table>
     </div>
   </article>
 </section>
 </section>
-</main></div><div class="toast" id="toast" role="status"></div>
+</main></div>
+<div id="adminVideoPreviewModal" role="dialog" aria-modal="true" aria-labelledby="adminVideoPreviewTitle">
+  <div class="preview-card">
+    <div class="preview-head">
+      <h2 id="adminVideoPreviewTitle">Video Preview</h2>
+      <button class="softbtn" id="closeAdminVideoPreview" type="button">✕ Close</button>
+    </div>
+    <video id="adminVideoPreviewPlayer" class="preview-player" controls playsinline preload="metadata"></video>
+    <div class="preview-info" id="adminVideoPreviewInfo"></div>
+    <div class="preview-error" id="adminVideoPreviewError"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
 <script>
 const toast=document.getElementById('toast');let timer;
 function notify(s){toast.textContent=s;toast.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>toast.classList.remove('show'),2400)}
@@ -421,6 +448,76 @@ let adminVideosHasMore=false;
 let adminVideosCache=[];
 let adminVideosAccessToken=null;
 
+
+function openAdminVideoPreview(video){
+  const modal=document.getElementById('adminVideoPreviewModal');
+  const player=document.getElementById('adminVideoPreviewPlayer');
+  const info=document.getElementById('adminVideoPreviewInfo');
+  const error=document.getElementById('adminVideoPreviewError');
+
+  player.pause();
+  player.removeAttribute('src');
+  player.load();
+  error.style.display='none';
+  error.textContent='';
+
+  document.getElementById('adminVideoPreviewTitle').textContent=
+    video.title||'Untitled video';
+
+  const rawUrl=String(video.video_url||'').trim();
+  let safeUrl='';
+  try{
+    const parsed=new URL(rawUrl,window.location.href);
+    if(parsed.protocol==='https:'||parsed.protocol==='http:') safeUrl=parsed.href;
+  }catch(_){}
+
+  if(safeUrl){
+    player.src=safeUrl;
+    player.load();
+    player.onerror=()=>{
+      error.textContent='Video could not be played. The URL may be unavailable or the format may not be supported.';
+      error.style.display='block';
+    };
+  }else{
+    error.textContent='No valid video URL is available for this record.';
+    error.style.display='block';
+  }
+
+  info.textContent=
+    (video.channel_name||'Unknown channel')+' · '+
+    (video.is_short?'Short':'Video')+' · '+
+    (video.visibility||'Unknown visibility');
+
+  modal.classList.add('open');
+  document.getElementById('closeAdminVideoPreview').focus();
+}
+
+function closeAdminVideoPreview(){
+  const modal=document.getElementById('adminVideoPreviewModal');
+  const player=document.getElementById('adminVideoPreviewPlayer');
+  player.pause();
+  player.removeAttribute('src');
+  player.load();
+  modal.classList.remove('open');
+}
+
+document.getElementById('adminVideosRows').addEventListener('click',event=>{
+  const button=event.target.closest('[data-preview-video]');
+  if(!button) return;
+  const video=adminVideosCache.find(v=>String(v.id)===button.dataset.previewVideo);
+  if(video) openAdminVideoPreview(video);
+});
+
+document.getElementById('closeAdminVideoPreview').addEventListener('click',closeAdminVideoPreview);
+document.getElementById('adminVideoPreviewModal').addEventListener('click',event=>{
+  if(event.target.id==='adminVideoPreviewModal') closeAdminVideoPreview();
+});
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&document.getElementById('adminVideoPreviewModal').classList.contains('open')){
+    closeAdminVideoPreview();
+  }
+});
+
 function renderAdminVideos(){
   const query=(document.getElementById('adminVideosSearch').value||'').trim().toLowerCase();
   const rows=adminVideosCache.filter(v=>
@@ -429,19 +526,31 @@ function renderAdminVideos(){
   const tbody=document.getElementById('adminVideosRows');
 
   if(!rows.length){
-    tbody.innerHTML='<tr><td colspan="7">No matching videos on this page.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="8">No matching videos on this page.</td></tr>';
     return;
   }
 
   tbody.innerHTML=rows.map(v=>`
     <tr>
-      <td>${escapeAdminUserText(v.title||'Untitled video')}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+          <span>${escapeAdminUserText(v.title||'Untitled video')}</span>
+          <button class="admin-preview-btn" type="button" data-preview-video="${escapeAdminUserText(v.id)}">▶ Preview</button>
+        </div>
+      </td>
       <td>${escapeAdminUserText(v.channel_name||'Unknown channel')}</td>
       <td>${v.is_short?'Short':'Video'}</td>
       <td>${escapeAdminUserText(v.visibility||'—')}</td>
       <td>${escapeAdminUserText(v.status||'—')}</td>
       <td>${formatAdminNumber(v.views)}</td>
       <td>${escapeAdminUserText(formatAdminUserDate(v.created_at))}</td>
+      <td>
+        ${v.visibility === 'Public'
+          ? `<button class="admin-preview-btn" type="button" data-video-visibility="${escapeAdminUserText(v.id)}" data-next-visibility="Private">Make Private</button>`
+          : v.visibility === 'Private'
+          ? `<button class="admin-preview-btn" type="button" data-video-visibility="${escapeAdminUserText(v.id)}" data-next-visibility="Public">Make Public</button>`
+          : '—'}
+      </td>
     </tr>
   `).join('');
 }
@@ -450,7 +559,7 @@ function renderAdminVideoReports(reports){
   const tbody=document.getElementById('adminVideoReportsRows');
 
   if(!reports.length){
-    tbody.innerHTML='<tr><td colspan="5">No video reports found.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="6">No video reports found.</td></tr>';
     return;
   }
 
@@ -461,6 +570,17 @@ function renderAdminVideoReports(reports){
       <td>${escapeAdminUserText(r.details||'—')}</td>
       <td>${escapeAdminUserText(r.status||'—')}</td>
       <td>${escapeAdminUserText(formatAdminUserDate(r.createdAt))}</td>
+      <td>
+        ${['pending','reviewing'].includes(String(r.status||'').toLowerCase())
+          ? `<div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${String(r.status).toLowerCase()==='pending'
+                ? `<button class="admin-preview-btn" type="button" data-report-action="reviewing" data-report-id="${escapeAdminUserText(r.id)}">Reviewing</button>`
+                : ''}
+              <button class="admin-preview-btn" type="button" data-report-action="resolved" data-report-id="${escapeAdminUserText(r.id)}">Resolve</button>
+              <button class="admin-preview-btn" type="button" data-report-action="rejected" data-report-id="${escapeAdminUserText(r.id)}">Reject</button>
+            </div>`
+          : '—'}
+      </td>
     </tr>
   `).join('');
 }
@@ -499,12 +619,76 @@ async function loadAdminVideos(accessToken,page=1){
   }catch(err){
     status.textContent='Could not load videos: '+(err.message||'Unknown error');
     document.getElementById('adminVideosRows').innerHTML=
-      '<tr><td colspan="7">Unable to load videos.</td></tr>';
+      '<tr><td colspan="8">Unable to load videos.</td></tr>';
     document.getElementById('adminVideoReportsRows').innerHTML=
-      '<tr><td colspan="5">Unable to load reports.</td></tr>';
+      '<tr><td colspan="6">Unable to load reports.</td></tr>';
     console.error('Admin videos:',err);
   }
 }
+
+
+async function runAdminVideoAction(payload, confirmation){
+  if(!adminVideosAccessToken) return;
+  if(confirmation && !window.confirm(confirmation)) return;
+
+  const status=document.getElementById('adminVideosStatus');
+  status.textContent='Applying admin action…';
+
+  try{
+    const {data,error}=await supabaseClient.functions.invoke('admin-video-action',{
+      body:payload,
+      headers:{Authorization:'Bearer '+adminVideosAccessToken}
+    });
+
+    if(error) throw new Error(data?.error||error.message||'Admin action failed.');
+    if(!data||data.success!==true||data.actionApplied!==true||data.auditLogged!==true){
+      throw new Error(data?.error||'Action or audit logging was not confirmed.');
+    }
+
+    status.textContent='Action saved and audit logged. Refreshing data…';
+    await loadAdminVideos(adminVideosAccessToken,adminVideosCurrentPage);
+  }catch(err){
+    status.textContent='Action failed: '+(err.message||'Unknown error');
+    console.error('Admin video action:',err);
+  }
+}
+
+document.getElementById('adminVideoReportsRows').addEventListener('click',event=>{
+  const button=event.target.closest('[data-report-action]');
+  if(!button) return;
+
+  const action=button.dataset.reportAction;
+  const reportId=Number(button.dataset.reportId);
+  if(!Number.isSafeInteger(reportId)||reportId<1) return;
+
+  const labels={
+    reviewing:'Mark this report as Reviewing?',
+    resolved:'Resolve this video report?',
+    rejected:'Reject this video report?'
+  };
+  if(!labels[action]) return;
+
+  runAdminVideoAction({
+    action:'set_report_status',
+    reportId,
+    status:action
+  },labels[action]);
+});
+
+document.getElementById('adminVideosRows').addEventListener('click',event=>{
+  const button=event.target.closest('[data-video-visibility]');
+  if(!button) return;
+
+  const videoId=button.dataset.videoVisibility;
+  const visibility=button.dataset.nextVisibility;
+  if(!videoId||!['Public','Private'].includes(visibility)) return;
+
+  runAdminVideoAction({
+    action:'set_video_visibility',
+    videoId,
+    visibility
+  },'Change this video visibility to '+visibility+'?');
+});
 
 document.getElementById('adminVideosSearch').addEventListener('input',renderAdminVideos);
 
