@@ -65,6 +65,7 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
 .admin-details span{display:block;color:var(--muted);font-size:11px;margin-bottom:8px}
 .admin-details strong{font-size:19px}
 @media(max-width:720px){.admin-metrics,.admin-details{grid-template-columns:repeat(2,minmax(0,1fr))}}
+[hidden]{display:none!important}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -92,7 +93,7 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
 <div><div class="navlabel">WORKSPACE</div>
 <button class="nav active" data-page="Overview"><span class="ico">◫</span> Overview</button><button class="nav" data-page="Content"><span class="ico">▣</span> Content <span class="count">24</span></button><button class="nav" data-page="Analytics"><span class="ico">⌁</span> Analytics</button><button class="nav" data-page="Comments"><span class="ico">▤</span> Comments <span class="count">8</span></button><button class="nav" data-page="Audience"><span class="ico">♙</span> Audience</button></div>
 <div><div class="navlabel">MANAGE</div><button class="nav" data-page="Monetization"><span class="ico">◇</span> Monetization</button><button class="nav" data-page="Copyright"><span class="ico">◈</span> Copyright</button><button class="nav" data-page="Settings"><span class="ico">⚙</span> Settings</button></div>
-<div><div class="navlabel">SUPER ADMIN</div><button class="nav" data-admin-page="Dashboard"><span class="ico">▦</span> Admin Dashboard</button></div>
+<div><div class="navlabel">SUPER ADMIN</div><button class="nav" data-admin-page="Dashboard"><span class="ico">▦</span> Admin Dashboard</button><button class="nav" data-admin-page="Users"><span class="ico">♙</span> User Management</button></div>
 <div class="sidebar-bottom"><div class="helpbox"><strong>✦ Creator resources</strong><p>Ideas and tips to help grow your Inflow channel.</p><button data-action="Creator resources">Explore resources ↗</button></div></div>
 </aside>
 <main>
@@ -144,6 +145,32 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
     <div class="tablewrap"><table><thead><tr><th>Video</th><th>Type</th><th>Views</th><th>Likes</th></tr></thead><tbody id="adminTopVideos"><tr><td colspan="4">Waiting for live data…</td></tr></tbody></table></div>
   </article>
 </div>
+<section id="adminUsersSection" hidden>
+  <div class="welcome">
+    <div><h2>User Management</h2><p class="subtitle">Registered Inflow accounts · Live Supabase data</p></div>
+    <button class="softbtn" id="refreshAdminUsers" type="button">↻ Refresh</button>
+  </div>
+  <div class="notice" id="adminUsersStatus">Users list is ready to load.</div>
+  <article class="card tablecard">
+    <div class="tablehead">
+      <div><h2 style="font-size:15px;margin:0 0 6px">All Users</h2><p class="subtitle">Search within the current page</p></div>
+      <input class="search" id="adminUsersSearch" placeholder="Search name, email or username..." style="max-width:280px">
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>User</th><th>Email</th><th>Username</th><th>Created</th><th>Last sign-in</th><th>Status</th></tr></thead>
+        <tbody id="adminUsersRows"><tr><td colspan="6">Waiting for user data…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="tablehead" style="margin-top:14px">
+      <span id="adminUsersPageLabel">Page 1</span>
+      <div style="display:flex;gap:8px">
+        <button class="softbtn" id="adminUsersPrev" type="button" disabled>← Previous</button>
+        <button class="softbtn" id="adminUsersNext" type="button" disabled>Next →</button>
+      </div>
+    </div>
+  </article>
+</section>
 </section>
 </main></div><div class="toast" id="toast" role="status"></div>
 <script>
@@ -173,6 +200,18 @@ function showAdminPage(name){
   document.getElementById('overview').classList.remove('active');
   document.getElementById('genericPage').classList.remove('active');
   document.getElementById('superAdminPage').classList.add('active');
+  Array.from(document.getElementById('superAdminPage').children).forEach(el=>{
+    el.hidden = el.id === 'adminUsersSection' ? name !== 'Users' : name !== 'Dashboard';
+  });
+  if(name === 'Users'){
+    supabaseClient.auth.getSession().then(({data,error})=>{
+      if(error) throw error;
+      if(!data.session) throw new Error('Admin session expired. Please sign in again.');
+      loadAdminUsers(data.session.access_token,1);
+    }).catch(err=>{
+      document.getElementById('adminUsersStatus').textContent='Could not load users: '+(err.message||'Session error');
+    });
+  }
   document.getElementById('pageTitle').textContent='Super Admin · '+name;
   document.getElementById('pageSubtitle').textContent='Inflow platform management';
   if(innerWidth<=720) document.getElementById('sidebar').classList.remove('open');
@@ -180,6 +219,95 @@ function showAdminPage(name){
 document.querySelectorAll('[data-admin-page]').forEach(b=>b.addEventListener('click',()=>showAdminPage(b.dataset.adminPage)));
 
 function formatAdminNumber(value){return Number(value||0).toLocaleString('en-IN');}
+
+let adminUsersCurrentPage=1;
+let adminUsersHasMore=false;
+let adminUsersCache=[];
+let adminUsersAccessToken=null;
+
+function escapeAdminUserText(value){
+  return String(value??'').replace(/[&<>"']/g,ch=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[ch]));
+}
+
+function formatAdminUserDate(value){
+  if(!value) return '—';
+  const date=new Date(value);
+  return Number.isNaN(date.getTime())?'—':date.toLocaleString('en-IN');
+}
+
+function renderAdminUsers(){
+  const query=(document.getElementById('adminUsersSearch').value||'').trim().toLowerCase();
+  const rows=adminUsersCache.filter(u=>
+    [u.fullName,u.email,u.username].some(v=>String(v||'').toLowerCase().includes(query))
+  );
+  const tbody=document.getElementById('adminUsersRows');
+
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="6">No matching users on this page.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML=rows.map(u=>{
+    const suspended=u.bannedUntil && new Date(u.bannedUntil).getTime()>Date.now();
+    const name=u.fullName||'Unnamed user';
+    return `<tr>
+      <td>${escapeAdminUserText(name)}</td>
+      <td>${escapeAdminUserText(u.email)}</td>
+      <td>${escapeAdminUserText(u.username||'—')}</td>
+      <td>${escapeAdminUserText(formatAdminUserDate(u.createdAt))}</td>
+      <td>${escapeAdminUserText(formatAdminUserDate(u.lastSignInAt))}</td>
+      <td>${suspended?'Suspended':'Active'}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadAdminUsers(accessToken,page=1){
+  const status=document.getElementById('adminUsersStatus');
+  status.textContent='Loading registered users…';
+  adminUsersAccessToken=accessToken;
+
+  try{
+    const {data,error}=await supabaseClient.functions.invoke('admin-users',{
+      body:{page,perPage:50},
+      headers:{Authorization:'Bearer '+accessToken}
+    });
+
+    if(error) throw new Error(error.message||'Users request failed.');
+    if(!data||data.success!==true||data.isAdmin!==true||!Array.isArray(data.users))
+      throw new Error(data?.error||'User list was not approved.');
+
+    adminUsersCurrentPage=data.page||page;
+    adminUsersHasMore=data.hasMore===true;
+    adminUsersCache=data.users;
+
+    document.getElementById('adminUsersPageLabel').textContent='Page '+adminUsersCurrentPage;
+    document.getElementById('adminUsersPrev').disabled=adminUsersCurrentPage<=1;
+    document.getElementById('adminUsersNext').disabled=!adminUsersHasMore;
+
+    renderAdminUsers();
+    status.textContent='Showing '+data.count+' users on this page · Live Supabase data.';
+  }catch(err){
+    status.textContent='Could not load users: '+(err.message||'Unknown error');
+    document.getElementById('adminUsersRows').innerHTML='<tr><td colspan="6">Unable to load users.</td></tr>';
+    console.error('Admin users:',err);
+  }
+}
+
+document.getElementById('adminUsersSearch').addEventListener('input',renderAdminUsers);
+document.getElementById('refreshAdminUsers').addEventListener('click',()=>{
+  if(adminUsersAccessToken) loadAdminUsers(adminUsersAccessToken,adminUsersCurrentPage);
+});
+document.getElementById('adminUsersPrev').addEventListener('click',()=>{
+  if(adminUsersAccessToken&&adminUsersCurrentPage>1)
+    loadAdminUsers(adminUsersAccessToken,adminUsersCurrentPage-1);
+});
+document.getElementById('adminUsersNext').addEventListener('click',()=>{
+  if(adminUsersAccessToken&&adminUsersHasMore)
+    loadAdminUsers(adminUsersAccessToken,adminUsersCurrentPage+1);
+});
+
 async function loadAdminMetrics(accessToken){
   const status=document.getElementById('adminDataStatus');
   status.textContent='Loading live Supabase metrics…';
