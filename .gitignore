@@ -1,0 +1,12 @@
+# Supabase local temporary files
+supabase/.temp/
+
+# Local backups
+*.before_*
+*.backup
+*.bak
+
+# Environment secrets
+.env
+.env.*
+!.env.example

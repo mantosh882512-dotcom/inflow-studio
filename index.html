@@ -59,6 +59,12 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
 #loginMessage{font-size:12px;line-height:1.5;color:#f5a6bd;margin-top:14px;min-height:18px;overflow-wrap:anywhere}
 .app{display:none}body.admin-authenticated .app{display:grid}body.admin-authenticated #adminLogin{display:none}
 
+.admin-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+.admin-details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.admin-details>div{padding:16px;border-radius:13px;background:var(--surface)}
+.admin-details span{display:block;color:var(--muted);font-size:11px;margin-bottom:8px}
+.admin-details strong{font-size:19px}
+@media(max-width:720px){.admin-metrics,.admin-details{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -86,6 +92,7 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
 <div><div class="navlabel">WORKSPACE</div>
 <button class="nav active" data-page="Overview"><span class="ico">◫</span> Overview</button><button class="nav" data-page="Content"><span class="ico">▣</span> Content <span class="count">24</span></button><button class="nav" data-page="Analytics"><span class="ico">⌁</span> Analytics</button><button class="nav" data-page="Comments"><span class="ico">▤</span> Comments <span class="count">8</span></button><button class="nav" data-page="Audience"><span class="ico">♙</span> Audience</button></div>
 <div><div class="navlabel">MANAGE</div><button class="nav" data-page="Monetization"><span class="ico">◇</span> Monetization</button><button class="nav" data-page="Copyright"><span class="ico">◈</span> Copyright</button><button class="nav" data-page="Settings"><span class="ico">⚙</span> Settings</button></div>
+<div><div class="navlabel">SUPER ADMIN</div><button class="nav" data-admin-page="Dashboard"><span class="ico">▦</span> Admin Dashboard</button></div>
 <div class="sidebar-bottom"><div class="helpbox"><strong>✦ Creator resources</strong><p>Ideas and tips to help grow your Inflow channel.</p><button data-action="Creator resources">Explore resources ↗</button></div></div>
 </aside>
 <main>
@@ -107,12 +114,25 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
 <article class="card"><div class="card-title"><div><h2>Quick actions</h2><p>Common creator tasks</p></div></div><div class="quick-grid"><button class="quick" data-action="Upload video"><span class="mint">↥</span><strong>Upload video</strong><small>Share something new</small></button><button class="quick" data-page-link="Comments"><span class="blue">▤</span><strong>Comments</strong><small>View conversations</small></button><button class="quick" data-page-link="Analytics"><span class="violet">⌁</span><strong>Analytics</strong><small>Explore performance</small></button><button class="quick" data-page-link="Settings"><span class="orange">⚙</span><strong>Settings</strong><small>Configure studio</small></button></div></article></div>
 </section>
 <section id="genericPage" class="page"><div class="welcome"><div><h2 id="genericTitle">Content</h2><p class="subtitle" id="genericSubtitle">Manage your creator workspace.</p></div></div><div class="notice">Preview only · This section is not connected to live Supabase data or real admin actions yet.</div><div class="card"><div class="placeholder" id="genericBody">Connect a secure backend to show real information here.</div></div></section>
+<section id="superAdminPage" class="page">
+<div class="welcome"><div><h2>Super Admin Dashboard</h2><p class="subtitle">Live platform overview · Supabase</p></div><button class="softbtn" id="refreshAdminMetrics" type="button">↻ Refresh</button></div>
+<div class="notice" id="adminDataStatus">Connecting to secure admin data…</div>
+<div class="metrics admin-metrics">
+<article class="card"><div class="metric-label">Total users</div><div class="metric-value" id="adminTotalUsers">—</div><small>Registered Auth accounts</small></article>
+<article class="card"><div class="metric-label">Creators / channels</div><div class="metric-value" id="adminCreators">—</div><small>Users with uploaded videos</small></article>
+<article class="card"><div class="metric-label">Total videos</div><div class="metric-value" id="adminVideos">—</div><small>Video records</small></article>
+<article class="card"><div class="metric-label">Displayed views</div><div class="metric-value" id="adminViews">—</div><small>Sum of videos.views</small></article>
+<article class="card"><div class="metric-label">Total reports</div><div class="metric-value" id="adminReports">—</div><small id="adminReportBreakdown">Video + channel reports</small></article>
+</div>
+<div class="card"><div class="card-title"><div><h2>Platform data</h2><p>Additional database counters</p></div></div>
+<div class="admin-details"><div><span>View events</span><strong id="adminViewEvents">—</strong></div><div><span>Subscription records</span><strong id="adminSubscriptions">—</strong></div><div><span>Profiles</span><strong id="adminProfiles">—</strong></div></div></div>
+</section>
 </main></div><div class="toast" id="toast" role="status"></div>
 <script>
 const toast=document.getElementById('toast');let timer;
 function notify(s){toast.textContent=s;toast.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>toast.classList.remove('show'),2400)}
 const descriptions={Content:'Review videos and Shorts published to Inflow.',Analytics:'Track views, watch time, and audience engagement.',Comments:'Review and respond to community comments.',Audience:'Understand your viewers and subscriber community.',Monetization:'Monetization tools and eligibility overview.',Copyright:'Review copyright notices and content claims.',Settings:'Configure Studio preferences and security.'};
-function showPage(name){document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));const overview=name==='Overview';document.getElementById('overview').classList.toggle('active',overview);document.getElementById('genericPage').classList.toggle('active',!overview);document.getElementById('pageTitle').textContent=overview?'Good evening, Creator ✦':name+' · Inflow Studio';document.getElementById('pageSubtitle').textContent=overview?'Here’s what’s happening with your channel today.':(descriptions[name]||'Manage your creator workspace.');document.getElementById('genericTitle').textContent=name;document.getElementById('genericSubtitle').textContent=descriptions[name]||'Manage your creator workspace.';document.getElementById('genericBody').textContent=name==='Content'?'The content list will be connected to your secure backend in the next step. Sample uploads are shown on the Overview page.':'Connect a secure backend to display '+name.toLowerCase()+' data and enable authorized actions.';if(innerWidth<=720)document.getElementById('sidebar').classList.remove('open');}
+function showPage(name){document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));document.getElementById('superAdminPage').classList.remove('active');const overview=name==='Overview';document.getElementById('overview').classList.toggle('active',overview);document.getElementById('genericPage').classList.toggle('active',!overview);document.getElementById('pageTitle').textContent=overview?'Good evening, Creator ✦':name+' · Inflow Studio';document.getElementById('pageSubtitle').textContent=overview?'Here’s what’s happening with your channel today.':(descriptions[name]||'Manage your creator workspace.');document.getElementById('genericTitle').textContent=name;document.getElementById('genericSubtitle').textContent=descriptions[name]||'Manage your creator workspace.';document.getElementById('genericBody').textContent=name==='Content'?'The content list will be connected to your secure backend in the next step. Sample uploads are shown on the Overview page.':'Connect a secure backend to display '+name.toLowerCase()+' data and enable authorized actions.';if(innerWidth<=720)document.getElementById('sidebar').classList.remove('open');}
 document.querySelectorAll('.nav').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
 document.querySelectorAll('[data-page-link]').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.pageLink)));
 document.querySelectorAll('[data-action]').forEach(b=>b.addEventListener('click',()=>notify(b.dataset.action+' is a preview action. Secure backend connection is needed.')));
@@ -130,6 +150,47 @@ const loginButton = document.getElementById('loginButton');
 const googleLoginButton = document.getElementById('googleLoginButton');
 let authCheckInProgress = false;
 function setLoginMessage(message, success=false){ loginMessage.textContent=message; loginMessage.style.color=success?'#f18abf':'#f5a6bd'; }
+function showAdminPage(name){
+  document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.adminPage===name));
+  document.getElementById('overview').classList.remove('active');
+  document.getElementById('genericPage').classList.remove('active');
+  document.getElementById('superAdminPage').classList.add('active');
+  document.getElementById('pageTitle').textContent='Super Admin · '+name;
+  document.getElementById('pageSubtitle').textContent='Inflow platform management';
+  if(innerWidth<=720) document.getElementById('sidebar').classList.remove('open');
+}
+document.querySelectorAll('[data-admin-page]').forEach(b=>b.addEventListener('click',()=>showAdminPage(b.dataset.adminPage)));
+
+function formatAdminNumber(value){return Number(value||0).toLocaleString('en-IN');}
+async function loadAdminMetrics(accessToken){
+  const status=document.getElementById('adminDataStatus');
+  status.textContent='Loading live Supabase metrics…';
+  try{
+    const {data,error}=await supabaseClient.functions.invoke('admin-dashboard',{
+      body:{},
+      headers:{Authorization:'Bearer '+accessToken}
+    });
+    if(error) throw new Error(error.message||'Dashboard request failed.');
+    if(!data||data.success!==true||data.isAdmin!==true||!data.metrics)
+      throw new Error(data?.error||'Admin dashboard data was not approved.');
+    const m=data.metrics;
+    document.getElementById('adminTotalUsers').textContent=formatAdminNumber(m.totalUsers);
+    document.getElementById('adminCreators').textContent=formatAdminNumber(m.videoCreators);
+    document.getElementById('adminVideos').textContent=formatAdminNumber(m.totalVideos);
+    document.getElementById('adminViews').textContent=formatAdminNumber(m.displayedViews);
+    const reports=Number(m.totalVideoReports||0)+Number(m.totalChannelReports||0);
+    document.getElementById('adminReports').textContent=formatAdminNumber(reports);
+    document.getElementById('adminReportBreakdown').textContent=formatAdminNumber(m.totalVideoReports)+' video · '+formatAdminNumber(m.totalChannelReports)+' channel';
+    document.getElementById('adminViewEvents').textContent=formatAdminNumber(m.totalViewEvents);
+    document.getElementById('adminSubscriptions').textContent=formatAdminNumber(m.totalSubscriptions);
+    document.getElementById('adminProfiles').textContent=formatAdminNumber(m.totalProfiles);
+    status.textContent='Live data loaded · '+new Date(data.generatedAt||Date.now()).toLocaleString();
+  }catch(err){
+    status.textContent='Could not load live data: '+(err.message||'Unknown error');
+    console.error('Admin dashboard metrics:',err);
+  }
+}
+
 function showAdminDashboard(){ document.body.classList.add('admin-authenticated'); }
 function showAdminLogin(){ document.body.classList.remove('admin-authenticated'); }
 async function verifyAdminSession(){
@@ -149,6 +210,8 @@ async function verifyAdminSession(){
     if(!data || data.success!==true || data.isAdmin!==true || data.user?.id!==session.user.id)
       throw new Error('Admin access was not approved. Check studio_admins and the admin-auth function.');
     showAdminDashboard();
+    showAdminPage('Dashboard');
+    await loadAdminMetrics(session.access_token);
     setLoginMessage('');
     return true;
   } catch(err){
@@ -197,6 +260,10 @@ const logoutButton=document.createElement('button');
 logoutButton.type='button';logoutButton.className='softbtn';logoutButton.textContent='Log out';logoutButton.setAttribute('aria-label','Log out of admin account');
 logoutButton.addEventListener('click',async()=>{await supabaseClient.auth.signOut();showAdminLogin();setLoginMessage('You have been signed out.',true);});
 document.querySelector('.actions').appendChild(logoutButton);
+document.getElementById('refreshAdminMetrics').addEventListener('click',async()=>{
+  const {data:{session}}=await supabaseClient.auth.getSession();
+  if(session) await loadAdminMetrics(session.access_token);
+});
 verifyAdminSession();
 
 </script>
