@@ -158,8 +158,8 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
     </div>
     <div class="tablewrap">
       <table>
-        <thead><tr><th>User</th><th>Email</th><th>Username</th><th>Created</th><th>Last sign-in</th><th>Status</th></tr></thead>
-        <tbody id="adminUsersRows"><tr><td colspan="6">Waiting for user data…</td></tr></tbody>
+        <thead><tr><th>User</th><th>Email</th><th>Username</th><th>Created</th><th>Last sign-in</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="adminUsersRows"><tr><td colspan="7">Waiting for user data…</td></tr></tbody>
       </table>
     </div>
     <div class="tablehead" style="margin-top:14px">
@@ -224,6 +224,7 @@ let adminUsersCurrentPage=1;
 let adminUsersHasMore=false;
 let adminUsersCache=[];
 let adminUsersAccessToken=null;
+let adminCurrentUserId=null;
 
 function escapeAdminUserText(value){
   return String(value??'').replace(/[&<>"']/g,ch=>({
@@ -245,7 +246,7 @@ function renderAdminUsers(){
   const tbody=document.getElementById('adminUsersRows');
 
   if(!rows.length){
-    tbody.innerHTML='<tr><td colspan="6">No matching users on this page.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="7">No matching users on this page.</td></tr>';
     return;
   }
 
@@ -259,6 +260,12 @@ function renderAdminUsers(){
       <td>${escapeAdminUserText(formatAdminUserDate(u.createdAt))}</td>
       <td>${escapeAdminUserText(formatAdminUserDate(u.lastSignInAt))}</td>
       <td>${suspended?'Suspended':'Active'}</td>
+      <td><button class="softbtn" type="button"
+        data-user-action="${suspended?'restore_user':'suspend_user'}"
+        data-user-id="${escapeAdminUserText(u.id)}"
+        ${u.id===adminCurrentUserId?'disabled':''}>
+        ${suspended?'Restore':'Suspend'}
+      </button></td>
     </tr>`;
   }).join('');
 }
@@ -290,10 +297,64 @@ async function loadAdminUsers(accessToken,page=1){
     status.textContent='Showing '+data.count+' users on this page · Live Supabase data.';
   }catch(err){
     status.textContent='Could not load users: '+(err.message||'Unknown error');
-    document.getElementById('adminUsersRows').innerHTML='<tr><td colspan="6">Unable to load users.</td></tr>';
+    document.getElementById('adminUsersRows').innerHTML='<tr><td colspan="7">Unable to load users.</td></tr>';
     console.error('Admin users:',err);
   }
 }
+
+
+document.getElementById('adminUsersRows').addEventListener('click',async event=>{
+  const button=event.target.closest('[data-user-action]');
+  if(!button || button.disabled) return;
+
+  const action=button.dataset.userAction;
+  const targetUserId=button.dataset.userId;
+  const isSuspend=action==='suspend_user';
+
+  if(!targetUserId || !['suspend_user','restore_user'].includes(action)) return;
+
+  const confirmed=confirm(isSuspend
+    ? 'Suspend this user? They will be blocked from new sign-ins.'
+    : 'Restore this user and remove the sign-in ban?');
+
+  if(!confirmed) return;
+
+  const reason=prompt('Reason (optional):','');
+  if(reason===null) return;
+
+  if(reason.length>500){
+    notify('Reason must be 500 characters or less.');
+    return;
+  }
+
+  if(!adminUsersAccessToken){
+    notify('Admin session expired. Please sign in again.');
+    return;
+  }
+
+  button.disabled=true;
+  button.textContent='Please wait…';
+
+  try{
+    const {data,error}=await supabaseClient.functions.invoke('admin-user-action',{
+      body:{action,targetUserId,reason},
+      headers:{Authorization:'Bearer '+adminUsersAccessToken}
+    });
+
+    if(error) throw new Error(error.message||'User action failed.');
+
+    if(!data || data.success!==true || data.auditLogged!==true){
+      throw new Error(data?.error||'User action was not confirmed.');
+    }
+
+    notify(isSuspend?'User suspended successfully.':'User restored successfully.');
+    await loadAdminUsers(adminUsersAccessToken,adminUsersCurrentPage);
+  }catch(err){
+    notify(err.message||'Unable to update user.');
+    button.disabled=false;
+    button.textContent=isSuspend?'Suspend':'Restore';
+  }
+});
 
 document.getElementById('adminUsersSearch').addEventListener('input',renderAdminUsers);
 document.getElementById('refreshAdminUsers').addEventListener('click',()=>{
@@ -374,6 +435,7 @@ async function verifyAdminSession(){
     if(error) throw new Error(error.message||'Admin verification failed.');
     if(!data || data.success!==true || data.isAdmin!==true || data.user?.id!==session.user.id)
       throw new Error('Admin access was not approved. Check studio_admins and the admin-auth function.');
+    adminCurrentUserId=session.user.id;
     showAdminDashboard();
     showAdminPage('Dashboard');
     await loadAdminMetrics(session.access_token);
