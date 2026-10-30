@@ -93,7 +93,7 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
 <div><div class="navlabel">WORKSPACE</div>
 <button class="nav active" data-page="Overview"><span class="ico">◫</span> Overview</button><button class="nav" data-page="Content"><span class="ico">▣</span> Content <span class="count">24</span></button><button class="nav" data-page="Analytics"><span class="ico">⌁</span> Analytics</button><button class="nav" data-page="Comments"><span class="ico">▤</span> Comments <span class="count">8</span></button><button class="nav" data-page="Audience"><span class="ico">♙</span> Audience</button></div>
 <div><div class="navlabel">MANAGE</div><button class="nav" data-page="Monetization"><span class="ico">◇</span> Monetization</button><button class="nav" data-page="Copyright"><span class="ico">◈</span> Copyright</button><button class="nav" data-page="Settings"><span class="ico">⚙</span> Settings</button></div>
-<div><div class="navlabel">SUPER ADMIN</div><button class="nav" data-admin-page="Dashboard"><span class="ico">▦</span> Admin Dashboard</button><button class="nav" data-admin-page="Users"><span class="ico">♙</span> User Management</button></div>
+<div><div class="navlabel">SUPER ADMIN</div><button class="nav" data-admin-page="Dashboard"><span class="ico">▦</span> Admin Dashboard</button><button class="nav" data-admin-page="Users"><span class="ico">♙</span> User Management</button><button class="nav" data-admin-page="Videos"><span class="ico">▣</span> Video Management</button></div>
 <div class="sidebar-bottom"><div class="helpbox"><strong>✦ Creator resources</strong><p>Ideas and tips to help grow your Inflow channel.</p><button data-action="Creator resources">Explore resources ↗</button></div></div>
 </aside>
 <main>
@@ -171,6 +171,41 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
     </div>
   </article>
 </section>
+<section id="adminVideosSection" hidden>
+  <div class="welcome">
+    <div><h2>Video Management</h2><p class="subtitle">All platform videos · Live Supabase data</p></div>
+    <button class="softbtn" id="refreshAdminVideos" type="button">↻ Refresh</button>
+  </div>
+  <div class="notice" id="adminVideosStatus">Video list is ready to load.</div>
+  <article class="card tablecard">
+    <div class="tablehead">
+      <div><h2 style="font-size:15px;margin:0 0 6px">All Videos</h2><p class="subtitle">Platform video records</p></div>
+      <input class="search" id="adminVideosSearch" placeholder="Search title or channel..." style="max-width:280px">
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Video</th><th>Channel</th><th>Type</th><th>Visibility</th><th>Status</th><th>Views</th><th>Uploaded</th></tr></thead>
+        <tbody id="adminVideosRows"><tr><td colspan="7">Waiting for video data…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="tablehead" style="margin-top:14px">
+      <span id="adminVideosPageLabel">Page 1</span>
+      <div style="display:flex;gap:8px">
+        <button class="softbtn" id="adminVideosPrev" type="button" disabled>← Previous</button>
+        <button class="softbtn" id="adminVideosNext" type="button" disabled>Next →</button>
+      </div>
+    </div>
+  </article>
+  <article class="card tablecard" style="margin-top:18px">
+    <div class="tablehead"><div><h2 style="font-size:15px;margin:0 0 6px">Reported Videos</h2><p class="subtitle">Community-submitted video reports</p></div></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Video</th><th>Reason</th><th>Details</th><th>Report status</th><th>Reported at</th></tr></thead>
+        <tbody id="adminVideoReportsRows"><tr><td colspan="5">Waiting for report data…</td></tr></tbody>
+      </table>
+    </div>
+  </article>
+</section>
 </section>
 </main></div><div class="toast" id="toast" role="status"></div>
 <script>
@@ -201,8 +236,19 @@ function showAdminPage(name){
   document.getElementById('genericPage').classList.remove('active');
   document.getElementById('superAdminPage').classList.add('active');
   Array.from(document.getElementById('superAdminPage').children).forEach(el=>{
-    el.hidden = el.id === 'adminUsersSection' ? name !== 'Users' : name !== 'Dashboard';
+    if(el.id === 'adminUsersSection') el.hidden = name !== 'Users';
+    else if(el.id === 'adminVideosSection') el.hidden = name !== 'Videos';
+    else el.hidden = name !== 'Dashboard';
   });
+  if(name === 'Videos'){
+    supabaseClient.auth.getSession().then(({data,error})=>{
+      if(error) throw error;
+      if(!data.session) throw new Error('Admin session expired. Please sign in again.');
+      loadAdminVideos(data.session.access_token,1);
+    }).catch(err=>{
+      document.getElementById('adminVideosStatus').textContent='Could not load videos: '+(err.message||'Session error');
+    });
+  }
   if(name === 'Users'){
     supabaseClient.auth.getSession().then(({data,error})=>{
       if(error) throw error;
@@ -367,6 +413,114 @@ document.getElementById('adminUsersPrev').addEventListener('click',()=>{
 document.getElementById('adminUsersNext').addEventListener('click',()=>{
   if(adminUsersAccessToken&&adminUsersHasMore)
     loadAdminUsers(adminUsersAccessToken,adminUsersCurrentPage+1);
+});
+
+
+let adminVideosCurrentPage=1;
+let adminVideosHasMore=false;
+let adminVideosCache=[];
+let adminVideosAccessToken=null;
+
+function renderAdminVideos(){
+  const query=(document.getElementById('adminVideosSearch').value||'').trim().toLowerCase();
+  const rows=adminVideosCache.filter(v=>
+    [v.title,v.channel_name].some(x=>String(x||'').toLowerCase().includes(query))
+  );
+  const tbody=document.getElementById('adminVideosRows');
+
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="7">No matching videos on this page.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML=rows.map(v=>`
+    <tr>
+      <td>${escapeAdminUserText(v.title||'Untitled video')}</td>
+      <td>${escapeAdminUserText(v.channel_name||'Unknown channel')}</td>
+      <td>${v.is_short?'Short':'Video'}</td>
+      <td>${escapeAdminUserText(v.visibility||'—')}</td>
+      <td>${escapeAdminUserText(v.status||'—')}</td>
+      <td>${formatAdminNumber(v.views)}</td>
+      <td>${escapeAdminUserText(formatAdminUserDate(v.created_at))}</td>
+    </tr>
+  `).join('');
+}
+
+function renderAdminVideoReports(reports){
+  const tbody=document.getElementById('adminVideoReportsRows');
+
+  if(!reports.length){
+    tbody.innerHTML='<tr><td colspan="5">No video reports found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML=reports.map(r=>`
+    <tr>
+      <td>${escapeAdminUserText(r.video?.title||'Video unavailable')}</td>
+      <td>${escapeAdminUserText(r.reason||'—')}</td>
+      <td>${escapeAdminUserText(r.details||'—')}</td>
+      <td>${escapeAdminUserText(r.status||'—')}</td>
+      <td>${escapeAdminUserText(formatAdminUserDate(r.createdAt))}</td>
+    </tr>
+  `).join('');
+}
+
+async function loadAdminVideos(accessToken,page=1){
+  const status=document.getElementById('adminVideosStatus');
+  status.textContent='Loading platform videos…';
+  adminVideosAccessToken=accessToken;
+
+  try{
+    const {data,error}=await supabaseClient.functions.invoke('admin-videos',{
+      body:{page,perPage:50},
+      headers:{Authorization:'Bearer '+accessToken}
+    });
+
+    if(error) throw new Error(error.message||'Videos request failed.');
+    if(!data||data.success!==true||data.isAdmin!==true||
+       !Array.isArray(data.videos)||!Array.isArray(data.reports)){
+      throw new Error(data?.error||'Video list was not approved.');
+    }
+
+    adminVideosCurrentPage=data.page||page;
+    adminVideosHasMore=data.hasMore===true;
+    adminVideosCache=data.videos;
+
+    document.getElementById('adminVideosPageLabel').textContent=
+      'Page '+adminVideosCurrentPage+' · '+formatAdminNumber(data.videoCount)+' videos';
+    document.getElementById('adminVideosPrev').disabled=adminVideosCurrentPage<=1;
+    document.getElementById('adminVideosNext').disabled=!adminVideosHasMore;
+
+    renderAdminVideos();
+    renderAdminVideoReports(data.reports);
+
+    status.textContent='Showing '+data.count+' videos · '+data.reportCount+
+      ' reports · Live Supabase data.';
+  }catch(err){
+    status.textContent='Could not load videos: '+(err.message||'Unknown error');
+    document.getElementById('adminVideosRows').innerHTML=
+      '<tr><td colspan="7">Unable to load videos.</td></tr>';
+    document.getElementById('adminVideoReportsRows').innerHTML=
+      '<tr><td colspan="5">Unable to load reports.</td></tr>';
+    console.error('Admin videos:',err);
+  }
+}
+
+document.getElementById('adminVideosSearch').addEventListener('input',renderAdminVideos);
+
+document.getElementById('refreshAdminVideos').addEventListener('click',()=>{
+  if(adminVideosAccessToken)
+    loadAdminVideos(adminVideosAccessToken,adminVideosCurrentPage);
+});
+
+document.getElementById('adminVideosPrev').addEventListener('click',()=>{
+  if(adminVideosAccessToken&&adminVideosCurrentPage>1)
+    loadAdminVideos(adminVideosAccessToken,adminVideosCurrentPage-1);
+});
+
+document.getElementById('adminVideosNext').addEventListener('click',()=>{
+  if(adminVideosAccessToken&&adminVideosHasMore)
+    loadAdminVideos(adminVideosAccessToken,adminVideosCurrentPage+1);
 });
 
 async function loadAdminMetrics(accessToken){
