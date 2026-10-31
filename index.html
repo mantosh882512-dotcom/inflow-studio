@@ -107,7 +107,7 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
 <div><div class="navlabel">WORKSPACE</div>
 <button class="nav active" data-page="Overview"><span class="ico">◫</span> Overview</button><button class="nav" data-page="Content"><span class="ico">▣</span> Content <span class="count">24</span></button><button class="nav" data-page="Analytics"><span class="ico">⌁</span> Analytics</button><button class="nav" data-page="Comments"><span class="ico">▤</span> Comments <span class="count">8</span></button><button class="nav" data-page="Audience"><span class="ico">♙</span> Audience</button></div>
 <div><div class="navlabel">MANAGE</div><button class="nav" data-page="Monetization"><span class="ico">◇</span> Monetization</button><button class="nav" data-page="Copyright"><span class="ico">◈</span> Copyright</button><button class="nav" data-page="Settings"><span class="ico">⚙</span> Settings</button></div>
-<div><div class="navlabel">SUPER ADMIN</div><button class="nav" data-admin-page="Dashboard"><span class="ico">▦</span> Admin Dashboard</button><button class="nav" data-admin-page="Users"><span class="ico">♙</span> User Management</button><button class="nav" data-admin-page="Videos"><span class="ico">▣</span> Video Management</button><button class="nav" data-admin-page="Channels"><span class="ico">♙</span> Channel Management</button></div>
+<div><div class="navlabel">SUPER ADMIN</div><button class="nav" data-admin-page="Dashboard"><span class="ico">▦</span> Admin Dashboard</button><button class="nav" data-admin-page="Users"><span class="ico">♙</span> User Management</button><button class="nav" data-admin-page="Videos"><span class="ico">▣</span> Video Management</button><button class="nav" data-admin-page="Channels"><span class="ico">♙</span> Channel Management</button><button class="nav" data-admin-page="Monetization"><span class="ico">＄</span> Monetization</button></div>
 <div class="sidebar-bottom"><div class="helpbox"><strong>✦ Creator resources</strong><p>Ideas and tips to help grow your Inflow channel.</p><button data-action="Creator resources">Explore resources ↗</button></div></div>
 </aside>
 <main>
@@ -165,6 +165,50 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
     <div class="tablewrap"><table><thead><tr><th>Video</th><th>Type</th><th>Views</th><th>Likes</th></tr></thead><tbody id="adminTopVideos"><tr><td colspan="4">Waiting for live data…</td></tr></tbody></table></div>
   </article>
 </div>
+
+<section id="adminMonetizationSection" hidden>
+  <div class="welcome">
+    <div>
+      <h2>Platform Monetization</h2>
+      <p class="subtitle">Super Admin · Platform-wide monetization overview</p>
+    </div>
+    <button class="softbtn" id="adminMonetizationRefresh" type="button">↻ Refresh</button>
+  </div>
+
+  <div class="notice" id="adminMonetizationStatus">Monetization data is ready to load.</div>
+
+  <h3 style="margin:20px 0 12px">Creator Performance</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px">
+    <article class="card" style="padding:20px"><div class="muted">Total Creators</div><div id="adminMonTotalCreators" style="font-size:27px;font-weight:800;margin-top:10px">—</div></article>
+    <article class="card" style="padding:20px"><div class="muted">Tracked Watch Hours</div><div id="adminMonWatchHours" style="font-size:27px;font-weight:800;margin-top:10px">—</div></article>
+    <article class="card" style="padding:20px"><div class="muted">Public Shorts Views</div><div id="adminMonShortsViews" style="font-size:27px;font-weight:800;margin-top:10px">—</div></article>
+    <article class="card" style="padding:20px"><div class="muted">Monetized Creators</div><div id="adminMonMonetized" style="font-size:22px;font-weight:800;margin-top:10px">Not Available</div></article>
+    <article class="card" style="padding:20px"><div class="muted">Eligible Creators</div><div id="adminMonEligible" style="font-size:22px;font-weight:800;margin-top:10px">Not Available</div></article>
+    <article class="card" style="padding:20px"><div class="muted">Pending Applications</div><div id="adminMonApplications" style="font-size:22px;font-weight:800;margin-top:10px">Not Available</div></article>
+  </div>
+
+  <h3 style="margin:24px 0 12px">Revenue Analytics</h3>
+  <article class="card" style="padding:20px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px">
+      <div><div class="muted">Total Ad Revenue</div><strong>Not Available</strong></div>
+      <div><div class="muted">Creator Revenue Share</div><strong>Not Available</strong></div>
+      <div><div class="muted">Inflow Platform Share</div><strong>Not Available</strong></div>
+    </div>
+    <p class="muted" style="margin-top:16px">Revenue records are not connected to the database yet.</p>
+  </article>
+
+  <h3 style="margin:24px 0 12px">Payout Overview</h3>
+  <article class="card" style="padding:20px">
+    Pending: Not Available · Processing: Not Available · Completed: Not Available · Failed: Not Available
+  </article>
+
+  <div class="notice" style="margin-top:16px">
+    Watch hours and Shorts views use tracked creator eligibility records.
+    Revenue, monetization decisions, applications and payouts will appear when their backend records are integrated.
+    No estimated or sample figures are displayed.
+  </div>
+</section>
+
 <section id="adminUsersSection" hidden>
   <div class="welcome">
     <div><h2>User Management</h2><p class="subtitle">Registered Inflow accounts · Live Supabase data</p></div>
@@ -316,6 +360,40 @@ const loginButton = document.getElementById('loginButton');
 const googleLoginButton = document.getElementById('googleLoginButton');
 let authCheckInProgress = false;
 function setLoginMessage(message, success=false){ loginMessage.textContent=message; loginMessage.style.color=success?'#f18abf':'#f5a6bd'; }
+
+async function loadAdminMonetization(accessToken){
+  const status = document.getElementById('adminMonetizationStatus');
+  status.textContent = 'Loading live monetization data...';
+
+  try {
+    const {data,error} = await supabaseClient.functions.invoke('admin-monetization',{
+      headers:{Authorization:'Bearer '+accessToken}
+    });
+
+    if(error) throw error;
+    if(data?.error) throw new Error(data.error);
+
+    const m = data?.metrics || data || {};
+    const number = value => value == null
+      ? 'Not Available'
+      : Number(value).toLocaleString('en-IN',{maximumFractionDigits:2});
+
+    document.getElementById('adminMonTotalCreators').textContent = number(m.totalCreators);
+    document.getElementById('adminMonWatchHours').textContent = number(m.watchHours);
+    document.getElementById('adminMonShortsViews').textContent = number(m.shortsViews);
+    document.getElementById('adminMonMonetized').textContent = number(m.monetizedCreators);
+    document.getElementById('adminMonEligible').textContent = number(m.eligibleCreators);
+    document.getElementById('adminMonApplications').textContent = number(m.pendingApplications);
+
+    status.textContent = m.analyticsAvailable
+      ? 'Live Supabase data loaded successfully.'
+      : 'Creator count loaded. Watch-time and Shorts analytics are currently unavailable.';
+  } catch(error) {
+    console.error('Admin monetization load failed:',error);
+    status.textContent = 'Could not load monetization: '+(error.message||'Unknown error');
+  }
+}
+
 function showAdminPage(name){
   document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.adminPage===name));
   document.getElementById('overview').classList.remove('active');
@@ -325,6 +403,7 @@ function showAdminPage(name){
     if(el.id === 'adminUsersSection') el.hidden = name !== 'Users';
     else if(el.id === 'adminVideosSection') el.hidden = name !== 'Videos';
    else if(el.id === 'adminChannelsSection') el.hidden = name !== 'Channels';
+    else if(el.id === 'adminMonetizationSection') el.hidden = name !== 'Monetization';
     else el.hidden = name !== 'Dashboard';
   });
   if(name === 'Channels'){
@@ -355,11 +434,29 @@ function showAdminPage(name){
       document.getElementById('adminUsersStatus').textContent='Could not load users: '+(err.message||'Session error');
     });
   }
+  if(name === 'Monetization'){
+    supabaseClient.auth.getSession().then(({data,error})=>{
+      if(error) throw error;
+      if(!data.session) throw new Error('Admin session expired. Please sign in again.');
+      loadAdminMonetization(data.session.access_token);
+    }).catch(err=>{
+      document.getElementById('adminMonetizationStatus').textContent =
+        'Could not load monetization: '+(err.message||'Session error');
+    });
+  }
   document.getElementById('pageTitle').textContent='Super Admin · '+name;
   document.getElementById('pageSubtitle').textContent='Inflow platform management';
   if(innerWidth<=720) document.getElementById('sidebar').classList.remove('open');
 }
 document.querySelectorAll('[data-admin-page]').forEach(b=>b.addEventListener('click',()=>showAdminPage(b.dataset.adminPage)));
+document.getElementById('adminMonetizationRefresh')?.addEventListener('click',async()=>{
+  const {data,error}=await supabaseClient.auth.getSession();
+  if(error || !data.session){
+    document.getElementById('adminMonetizationStatus').textContent='Admin session expired. Please sign in again.';
+    return;
+  }
+  loadAdminMonetization(data.session.access_token);
+});
 
 function formatAdminNumber(value){return Number(value||0).toLocaleString('en-IN');}
 
