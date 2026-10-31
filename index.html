@@ -107,7 +107,7 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
 <div><div class="navlabel">WORKSPACE</div>
 <button class="nav active" data-page="Overview"><span class="ico">◫</span> Overview</button><button class="nav" data-page="Content"><span class="ico">▣</span> Content <span class="count">24</span></button><button class="nav" data-page="Analytics"><span class="ico">⌁</span> Analytics</button><button class="nav" data-page="Comments"><span class="ico">▤</span> Comments <span class="count">8</span></button><button class="nav" data-page="Audience"><span class="ico">♙</span> Audience</button></div>
 <div><div class="navlabel">MANAGE</div><button class="nav" data-page="Monetization"><span class="ico">◇</span> Monetization</button><button class="nav" data-page="Copyright"><span class="ico">◈</span> Copyright</button><button class="nav" data-page="Settings"><span class="ico">⚙</span> Settings</button></div>
-<div><div class="navlabel">SUPER ADMIN</div><button class="nav" data-admin-page="Dashboard"><span class="ico">▦</span> Admin Dashboard</button><button class="nav" data-admin-page="Users"><span class="ico">♙</span> User Management</button><button class="nav" data-admin-page="Videos"><span class="ico">▣</span> Video Management</button></div>
+<div><div class="navlabel">SUPER ADMIN</div><button class="nav" data-admin-page="Dashboard"><span class="ico">▦</span> Admin Dashboard</button><button class="nav" data-admin-page="Users"><span class="ico">♙</span> User Management</button><button class="nav" data-admin-page="Videos"><span class="ico">▣</span> Video Management</button><button class="nav" data-admin-page="Channels"><span class="ico">♙</span> Channel Management</button></div>
 <div class="sidebar-bottom"><div class="helpbox"><strong>✦ Creator resources</strong><p>Ideas and tips to help grow your Inflow channel.</p><button data-action="Creator resources">Explore resources ↗</button></div></div>
 </aside>
 <main>
@@ -220,6 +220,59 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
     </div>
   </article>
 </section>
+
+<section id="adminChannelsSection" hidden>
+  <div class="welcome">
+    <div>
+      <h2>Channel Management</h2>
+      <p class="subtitle">All creator channels · Live Supabase data</p>
+    </div>
+    <button class="softbtn" id="refreshAdminChannels" type="button">↻ Refresh</button>
+  </div>
+
+  <div class="notice" id="adminChannelsStatus">Channel list is ready to load.</div>
+
+  <article class="card tablecard">
+    <div class="tablehead">
+      <div>
+        <h2 style="font-size:15px;margin:0 0 6px">All Channels</h2>
+        <p class="subtitle">Manage channel verification and moderation</p>
+      </div>
+      <input class="search" id="adminChannelsSearch"
+        placeholder="Search channel or username..."
+        style="max-width:280px">
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Channel</th>
+            <th>Username</th>
+            <th>Subscribers</th>
+            <th>Videos</th>
+            <th>Joined</th>
+            <th>Verification</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="adminChannelsRows">
+          <tr><td colspan="8">Waiting for channel data…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tablehead" style="margin-top:14px">
+      <span id="adminChannelsPageLabel">Page 1</span>
+      <div style="display:flex;gap:8px">
+        <button class="softbtn" id="adminChannelsPrev" type="button" disabled>← Previous</button>
+        <button class="softbtn" id="adminChannelsNext" type="button" disabled>Next →</button>
+      </div>
+    </div>
+  </article>
+</section>
+
 </section>
 </main></div>
 <div id="adminVideoPreviewModal" role="dialog" aria-modal="true" aria-labelledby="adminVideoPreviewTitle">
@@ -265,8 +318,19 @@ function showAdminPage(name){
   Array.from(document.getElementById('superAdminPage').children).forEach(el=>{
     if(el.id === 'adminUsersSection') el.hidden = name !== 'Users';
     else if(el.id === 'adminVideosSection') el.hidden = name !== 'Videos';
+   else if(el.id === 'adminChannelsSection') el.hidden = name !== 'Channels';
     else el.hidden = name !== 'Dashboard';
   });
+  if(name === 'Channels'){
+    supabaseClient.auth.getSession().then(({data,error})=>{
+      if(error) throw error;
+      if(!data.session) throw new Error('Admin session expired. Please sign in again.');
+      loadAdminChannels(data.session.access_token,1);
+    }).catch(err=>{
+      document.getElementById('adminChannelsStatus').textContent=
+        'Could not load channels: '+(err.message||'Session error');
+    });
+  }
   if(name === 'Videos'){
     supabaseClient.auth.getSession().then(({data,error})=>{
       if(error) throw error;
@@ -705,6 +769,190 @@ document.getElementById('adminVideosPrev').addEventListener('click',()=>{
 document.getElementById('adminVideosNext').addEventListener('click',()=>{
   if(adminVideosAccessToken&&adminVideosHasMore)
     loadAdminVideos(adminVideosAccessToken,adminVideosCurrentPage+1);
+});
+
+
+let adminChannelsCurrentPage=1;
+let adminChannelsHasMore=false;
+let adminChannelsCache=[];
+let adminChannelsAccessToken=null;
+
+function renderAdminChannels(){
+  const query=(document.getElementById('adminChannelsSearch').value||'').trim().toLowerCase();
+
+  const rows=adminChannelsCache.filter(c=>
+    [c.fullName,c.username].some(v=>String(v||'').toLowerCase().includes(query))
+  );
+
+  const tbody=document.getElementById('adminChannelsRows');
+
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="8">No matching channels on this page.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML=rows.map(c=>{
+    const suspended=c.isSuspended===true;
+    const verified=c.isVerified===true;
+
+    return `<tr>
+      <td>${escapeAdminUserText(c.fullName||'Unnamed channel')}</td>
+      <td>${escapeAdminUserText(c.username||'—')}</td>
+      <td>${formatAdminNumber(c.subscriberCount)}</td>
+      <td>${formatAdminNumber(c.videoCount)}</td>
+      <td>${escapeAdminUserText(formatAdminUserDate(c.createdAt))}</td>
+      <td>
+        <span class="status">${verified?'✓ Verified':'Unverified'}</span>
+      </td>
+      <td>
+        <span class="status">${suspended?'Suspended':'Active'}</span>
+      </td>
+      <td>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="softbtn" type="button"
+            data-channel-action="${verified?'unverify_channel':'verify_channel'}"
+            data-channel-id="${escapeAdminUserText(c.id)}">
+            ${verified?'Unverify':'Verify'}
+          </button>
+          <button class="softbtn" type="button"
+            data-channel-action="${suspended?'restore_channel':'suspend_channel'}"
+            data-channel-id="${escapeAdminUserText(c.id)}">
+            ${suspended?'Restore':'Suspend'}
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadAdminChannels(accessToken,page=1){
+  const status=document.getElementById('adminChannelsStatus');
+  status.textContent='Loading creator channels…';
+  adminChannelsAccessToken=accessToken;
+
+  try{
+    const search=(document.getElementById('adminChannelsSearch').value||'').trim();
+
+    const {data,error}=await supabaseClient.functions.invoke('admin-channels',{
+      body:{page,perPage:25,search},
+      headers:{Authorization:'Bearer '+accessToken}
+    });
+
+    if(error) throw new Error(data?.error||error.message||'Channels request failed.');
+
+    if(!data||data.success!==true||data.isAdmin!==true||!Array.isArray(data.channels)){
+      throw new Error(data?.error||'Channel list was not approved.');
+    }
+
+    adminChannelsCurrentPage=data.page||page;
+    adminChannelsHasMore=data.hasMore===true;
+    adminChannelsCache=data.channels;
+
+    document.getElementById('adminChannelsPageLabel').textContent=
+      'Page '+adminChannelsCurrentPage+' · '+formatAdminNumber(data.totalCount)+' channels';
+
+    document.getElementById('adminChannelsPrev').disabled=adminChannelsCurrentPage<=1;
+    document.getElementById('adminChannelsNext').disabled=!adminChannelsHasMore;
+
+    renderAdminChannels();
+
+    status.textContent='Showing '+data.count+' channels · Live Supabase data.';
+  }catch(err){
+    status.textContent='Could not load channels: '+(err.message||'Unknown error');
+    document.getElementById('adminChannelsRows').innerHTML=
+      '<tr><td colspan="8">Unable to load channels.</td></tr>';
+    console.error('Admin channels:',err);
+  }
+}
+
+document.getElementById('adminChannelsRows').addEventListener('click',async event=>{
+  const button=event.target.closest('[data-channel-action]');
+  if(!button||button.disabled) return;
+
+  const action=button.dataset.channelAction;
+  const channelId=button.dataset.channelId;
+
+  const allowedActions=[
+    'verify_channel',
+    'unverify_channel',
+    'suspend_channel',
+    'restore_channel'
+  ];
+
+  if(!channelId||!allowedActions.includes(action)) return;
+
+  const labels={
+    verify_channel:'Verify this channel?',
+    unverify_channel:'Remove verification from this channel?',
+    suspend_channel:'Suspend this channel?',
+    restore_channel:'Restore this channel?'
+  };
+
+  if(!confirm(labels[action])) return;
+
+  let reason='';
+
+  if(action==='suspend_channel'){
+    reason=prompt('Enter the reason for suspending this channel:','');
+    if(reason===null) return;
+    reason=reason.trim();
+
+    if(!reason){
+      alert('Suspension reason is required.');
+      return;
+    }
+    if(reason.length>500){
+      alert('Reason must be 500 characters or less.');
+      return;
+    }
+  }
+
+  const status=document.getElementById('adminChannelsStatus');
+  status.textContent='Applying channel action…';
+  button.disabled=true;
+
+  try{
+    const {data,error}=await supabaseClient.functions.invoke('admin-channel-action',{
+      body:{channelId,action,reason},
+      headers:{Authorization:'Bearer '+adminChannelsAccessToken}
+    });
+
+    if(error) throw new Error(data?.error||error.message||'Channel action failed.');
+
+    if(!data||data.success!==true||data.auditLogged!==true){
+      throw new Error(data?.error||'Action or audit logging was not confirmed.');
+    }
+
+    status.textContent='Channel action saved and audit logged. Refreshing…';
+
+    await loadAdminChannels(adminChannelsAccessToken,adminChannelsCurrentPage);
+  }catch(err){
+    status.textContent='Action failed: '+(err.message||'Unknown error');
+    button.disabled=false;
+    console.error('Admin channel action:',err);
+  }
+});
+
+document.getElementById('adminChannelsSearch').addEventListener('input',()=>{
+  renderAdminChannels();
+});
+
+document.getElementById('refreshAdminChannels').addEventListener('click',()=>{
+  if(adminChannelsAccessToken){
+    loadAdminChannels(adminChannelsAccessToken,adminChannelsCurrentPage);
+  }
+});
+
+document.getElementById('adminChannelsPrev').addEventListener('click',()=>{
+  if(adminChannelsAccessToken&&adminChannelsCurrentPage>1){
+    loadAdminChannels(adminChannelsAccessToken,adminChannelsCurrentPage-1);
+  }
+});
+
+document.getElementById('adminChannelsNext').addEventListener('click',()=>{
+  if(adminChannelsAccessToken&&adminChannelsHasMore){
+    loadAdminChannels(adminChannelsAccessToken,adminChannelsCurrentPage+1);
+  }
 });
 
 async function loadAdminMetrics(accessToken){
