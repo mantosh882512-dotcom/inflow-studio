@@ -89,6 +89,8 @@ Deno.serve(async (req: Request) => {
       videoReportsResult,
           pendingVideoReportsResult,
       channelReportsResult,
+      verifiedChannelsResult,
+        suspendedChannelsResult,
       ] = await Promise.all([
       adminClient.from("profiles").select("*", { count: "exact", head: true }),
       adminClient.from("videos").select("*", { count: "exact", head: true }),
@@ -97,6 +99,8 @@ Deno.serve(async (req: Request) => {
       adminClient.from("video_reports").select("*", { count: "exact", head: true }),
           adminClient.from("video_reports").select("*", { count: "exact", head: true }).eq("status", "pending"),
       adminClient.from("channel_reports").select("*", { count: "exact", head: true }),
+        adminClient.from("channel_moderation").select("*", { count: "exact", head: true }).eq("is_verified", true),
+        adminClient.from("channel_moderation").select("*", { count: "exact", head: true }).eq("is_suspended", true),
     ]);
 
     const results = [
@@ -107,6 +111,8 @@ Deno.serve(async (req: Request) => {
       videoReportsResult,
           pendingVideoReportsResult,
       channelReportsResult,
+        verifiedChannelsResult,
+        suspendedChannelsResult,
       ];
 
     const failedQuery = results.find((result) => result.error);
@@ -262,7 +268,21 @@ Deno.serve(async (req: Request) => {
 
       // 5. Count all Auth users using pagination.
     let totalUsers = 0;
-    let page = 1;
+    let activeUsers = 0;
+      let newUsersToday = 0;
+
+      const now = new Date();
+      const indiaOffsetMs = 330 * 60 * 1000;
+      const indiaNow = new Date(now.getTime() + indiaOffsetMs);
+      const indiaMidnightUtc =
+        Date.UTC(
+          indiaNow.getUTCFullYear(),
+          indiaNow.getUTCMonth(),
+          indiaNow.getUTCDate(),
+        ) - indiaOffsetMs;
+      const activeSince = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+      let page = 1;
     const perPage = 1000;
 
     while (true) {
@@ -278,6 +298,22 @@ Deno.serve(async (req: Request) => {
 
       totalUsers += data.users.length;
 
+        for (const authUser of data.users) {
+          if (
+            authUser.last_sign_in_at &&
+            Date.parse(authUser.last_sign_in_at) >= activeSince
+          ) {
+            activeUsers++;
+          }
+
+          if (
+            authUser.created_at &&
+            Date.parse(authUser.created_at) >= indiaMidnightUtc
+          ) {
+            newUsersToday++;
+          }
+        }
+
       if (data.users.length < perPage) {
         break;
       }
@@ -291,6 +327,12 @@ Deno.serve(async (req: Request) => {
       isAdmin: true,
       metrics: {
         totalUsers,
+          activeUsers,
+          newUsersToday,
+          verifiedChannels: verifiedChannelsResult.count ?? 0,
+          suspendedChannels: suspendedChannelsResult.count ?? 0,
+          revenueAvailable: false,
+          proPassAvailable: false,
         totalProfiles: profilesResult.count ?? 0,
         totalVideos: videosResult.count ?? 0,
         totalViewEvents: viewEventsResult.count ?? 0,

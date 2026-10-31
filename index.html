@@ -134,13 +134,19 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
 <div class="notice" id="adminDataStatus">Connecting to secure admin data…</div>
 <div class="metrics admin-metrics">
 <article class="card"><div class="metric-label">Total users</div><div class="metric-value" id="adminTotalUsers">—</div><small>Registered Auth accounts</small></article>
+  <article class="card"><div class="metric-label">Active users</div><div class="metric-value" id="adminActiveUsers">—</div><small>Logged in during last 30 days</small></article>
+  <article class="card"><div class="metric-label">New users today</div><div class="metric-value" id="adminNewUsersToday">—</div><small>Accounts created today · IST</small></article>
+  <article class="card"><div class="metric-label">Verified channels</div><div class="metric-value" id="adminVerifiedChannels">—</div><small>Admin-verified channels</small></article>
+  <article class="card"><div class="metric-label">Suspended channels</div><div class="metric-value" id="adminSuspendedChannels">—</div><small>Currently suspended</small></article>
 <article class="card"><div class="metric-label">Creators / channels</div><div class="metric-value" id="adminCreators">—</div><small>Users with uploaded videos</small></article>
 <article class="card"><div class="metric-label">Total videos</div><div class="metric-value" id="adminVideos">—</div><small>Video records</small></article>
 <article class="card"><div class="metric-label">Displayed views</div><div class="metric-value" id="adminViews">—</div><small>Sum of videos.views</small></article>
 <article class="card"><div class="metric-label">Total reports</div><div class="metric-value" id="adminReports">—</div><small id="adminReportBreakdown">Video + channel reports</small></article>
 </div>
 <div class="card"><div class="card-title"><div><h2>Platform data</h2><p>Additional database counters</p></div></div>
-<div class="admin-details"><div><span>View events</span><strong id="adminViewEvents">—</strong></div><div><span>Subscription records</span><strong id="adminSubscriptions">—</strong></div><div><span>Profiles</span><strong id="adminProfiles">—</strong></div></div></div>
+<div class="admin-details"><div><span>View events</span><strong id="adminViewEvents">—</strong></div><div><span>Subscription records</span><strong id="adminSubscriptions">—</strong></div><div><span>Profiles</span><strong id="adminProfiles">—</strong></div>
+  <div><span>Revenue</span><strong id="adminRevenue">Not Available</strong></div>
+  <div><span>Pro Pass users</span><strong id="adminProPassUsers">Not Available</strong></div></div></div>
 
 <div class="metrics admin-metrics" style="margin-top:18px">
   <article class="card"><div class="metric-label">Pending video reports</div><div class="metric-value" id="adminPendingReports">—</div><small>Reports awaiting review</small></article>
@@ -968,6 +974,12 @@ async function loadAdminMetrics(accessToken){
       throw new Error(data?.error||'Admin dashboard data was not approved.');
     const m=data.metrics;
     document.getElementById('adminTotalUsers').textContent=formatAdminNumber(m.totalUsers);
+  document.getElementById('adminActiveUsers').textContent=formatAdminNumber(m.activeUsers);
+  document.getElementById('adminNewUsersToday').textContent=formatAdminNumber(m.newUsersToday);
+  document.getElementById('adminVerifiedChannels').textContent=formatAdminNumber(m.verifiedChannels);
+  document.getElementById('adminSuspendedChannels').textContent=formatAdminNumber(m.suspendedChannels);
+  document.getElementById('adminRevenue').textContent=m.revenueAvailable ? formatAdminNumber(m.totalRevenue) : 'Not Available';
+  document.getElementById('adminProPassUsers').textContent=m.proPassAvailable ? formatAdminNumber(m.proPassUsers) : 'Not Available';
     document.getElementById('adminCreators').textContent=formatAdminNumber(m.videoCreators);
     document.getElementById('adminVideos').textContent=formatAdminNumber(m.totalVideos);
     document.getElementById('adminViews').textContent=formatAdminNumber(m.displayedViews);
