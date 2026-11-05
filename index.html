@@ -107,7 +107,7 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
 <div><div class="navlabel">WORKSPACE</div>
 <button class="nav active" data-page="Overview"><span class="ico">◫</span> Overview</button><button class="nav" data-page="Content"><span class="ico">▣</span> Content <span class="count">24</span></button><button class="nav" data-page="Analytics"><span class="ico">⌁</span> Analytics</button><button class="nav" data-page="Comments"><span class="ico">▤</span> Comments <span class="count">8</span></button><button class="nav" data-page="Audience"><span class="ico">♙</span> Audience</button></div>
 <div><div class="navlabel">MANAGE</div><button class="nav" data-page="Monetization"><span class="ico">◇</span> Monetization</button><button class="nav" data-page="Copyright"><span class="ico">◈</span> Copyright</button><button class="nav" data-page="Settings"><span class="ico">⚙</span> Settings</button></div>
-<div><div class="navlabel">SUPER ADMIN</div><button class="nav" data-admin-page="Dashboard"><span class="ico">▦</span> Admin Dashboard</button><button class="nav" data-admin-page="Users"><span class="ico">♙</span> User Management</button><button class="nav" data-admin-page="Videos"><span class="ico">▣</span> Video Management</button><button class="nav" data-admin-page="Channels"><span class="ico">♙</span> Channel Management</button><button class="nav" data-admin-page="Monetization"><span class="ico">＄</span> Monetization</button></div>
+<div><div class="navlabel">SUPER ADMIN</div><button class="nav" data-admin-page="Dashboard"><span class="ico">▦</span> Admin Dashboard</button><button class="nav" data-admin-page="Users"><span class="ico">♙</span> User Management</button><button class="nav" data-admin-page="Videos"><span class="ico">▣</span> Video Management</button><button class="nav" data-admin-page="Channels"><span class="ico">♙</span> Channel Management</button><button class="nav" data-admin-page="Monetization"><span class="ico">＄</span> Monetization</button><button class="nav" data-admin-page="Crash Reports"><span class="ico">⚠</span> Crash Reports</button></div>
 <div class="sidebar-bottom"><div class="helpbox"><strong>✦ Creator resources</strong><p>Ideas and tips to help grow your Inflow channel.</p><button data-action="Creator resources">Explore resources ↗</button></div></div>
 </aside>
 <main>
@@ -323,6 +323,96 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
   </article>
 </section>
 
+
+<section id="adminCrashReportsSection" hidden>
+  <div class="welcome">
+    <div>
+      <h2>Crash Reports</h2>
+      <p class="subtitle">MiniTube application stability · Live crash monitoring</p>
+    </div>
+    <button class="softbtn" id="refreshCrashReports" type="button">↻ Refresh</button>
+  </div>
+
+  <div class="metrics admin-metrics">
+    <article class="card">
+      <div class="metric-label">Total crash reports</div>
+      <div class="metric-value" id="crashTotal">—</div>
+      <small>All recorded crashes</small>
+    </article>
+    <article class="card">
+      <div class="metric-label">Unresolved crashes</div>
+      <div class="metric-value" id="crashPending">—</div>
+      <small>Awaiting investigation</small>
+    </article>
+    <article class="card">
+      <div class="metric-label">Resolved crashes</div>
+      <div class="metric-value" id="crashResolved">—</div>
+      <small>Marked as resolved</small>
+    </article>
+  </div>
+
+  <div class="notice" id="crashReportsStatus">
+    Crash monitoring is ready.
+  </div>
+
+  <article class="card tablecard">
+    <div class="tablehead">
+      <div>
+        <h2 style="font-size:15px;margin:0 0 6px">Crash History</h2>
+        <p class="subtitle">Investigate application errors</p>
+      </div>
+      <select id="crashStatusFilter" class="search" style="max-width:170px">
+        <option value="all">All crashes</option>
+        <option value="false">Unresolved</option>
+        <option value="true">Resolved</option>
+      </select>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Error type</th>
+            <th>Error message</th>
+            <th>Platform</th>
+            <th>App version</th>
+            <th>First seen</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="crashReportsRows">
+          <tr><td colspan="7">Waiting for crash reports...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tablehead" style="margin-top:14px">
+      <span id="crashReportsPage">Page 1</span>
+      <div style="display:flex;gap:8px">
+        <button class="softbtn" id="crashPrev" disabled>← Previous</button>
+        <button class="softbtn" id="crashNext" disabled>Next →</button>
+      </div>
+    </div>
+  </article>
+
+  <article class="card" style="margin-top:18px">
+    <div class="card-title">
+      <div>
+        <h2>Crash Investigation</h2>
+        <p>Stack trace and AI-assisted analysis workspace</p>
+      </div>
+    </div>
+    <div id="crashDetails" class="notice">
+      Select a crash report to inspect its details.
+    </div>
+    <div id="crashStack" style="margin-top:12px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px"></div>
+    <div id="crashAIAnalysis" class="notice" style="margin-top:12px">
+      AI analysis will appear when an analysis provider is integrated.
+    </div>
+  </article>
+</section>
+
 </section>
 </main></div>
 <div id="adminVideoPreviewModal" role="dialog" aria-modal="true" aria-labelledby="adminVideoPreviewTitle">
@@ -394,6 +484,215 @@ async function loadAdminMonetization(accessToken){
   }
 }
 
+
+// ===== CRASH REPORTS MANAGEMENT =====
+let crashCurrentPage = 1;
+let crashHasMore = false;
+let crashAccessToken = null;
+let crashReportsCache = [];
+
+function crashEscape(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;',
+    '"':'&quot;', "'":'&#39;'
+  }[c]));
+}
+
+async function loadCrashReports(page = 1) {
+  const status = document.getElementById('crashReportsStatus');
+  const rows = document.getElementById('crashReportsRows');
+
+  status.textContent = 'Loading crash reports...';
+
+  try {
+    const {data: sessionData, error: sessionError} =
+      await supabaseClient.auth.getSession();
+
+    if (sessionError || !sessionData.session) {
+      throw new Error('Admin session expired. Please sign in again.');
+    }
+
+    crashAccessToken = sessionData.session.access_token;
+
+    const filter = document.getElementById('crashStatusFilter').value;
+    const body = {
+      action: 'list',
+      page,
+      limit: 25
+    };
+
+    if (filter !== 'all') body.resolved = filter === 'true';
+
+    const {data, error} = await supabaseClient.functions.invoke(
+      'admin-crash-reports',
+      {
+        body,
+        headers: {
+          Authorization: 'Bearer ' + crashAccessToken
+        }
+      }
+    );
+
+    if (error) throw new Error(error.message || 'Crash API failed');
+    if (!data || data.success !== true || data.isAdmin !== true) {
+      throw new Error(data?.error || 'Admin verification failed');
+    }
+
+    crashReportsCache = data.reports || [];
+    crashCurrentPage = data.page || page;
+    crashHasMore = crashReportsCache.length === 25;
+
+    document.getElementById('crashTotal').textContent =
+      formatAdminNumber(data.total);
+
+    document.getElementById('crashPending').textContent =
+      formatAdminNumber(data.pending);
+
+    document.getElementById('crashResolved').textContent =
+      formatAdminNumber(data.resolved);
+
+    rows.innerHTML = crashReportsCache.length
+      ? crashReportsCache.map(r => `
+        <tr>
+          <td>${crashEscape(r.error_type)}</td>
+          <td style="max-width:260px;white-space:normal">
+            ${crashEscape(r.error_message)}
+          </td>
+          <td>${crashEscape(r.platform || 'Unknown')}</td>
+          <td>${crashEscape(r.app_version || 'Unknown')}</td>
+          <td>${crashEscape(r.created_at ? new Date(r.created_at).toLocaleString() : 'Unknown')}</td>
+          <td>
+            <span class="status ${r.resolved ? '' : 'review'}">
+              ${r.resolved ? 'Resolved' : 'Unresolved'}
+            </span>
+          </td>
+          <td>
+            <button class="softbtn" data-crash-view="${crashEscape(r.id)}">View</button>
+            <button class="softbtn"
+              data-crash-resolve="${crashEscape(r.id)}"
+              data-resolved="${!r.resolved}">
+              ${r.resolved ? 'Unresolve' : 'Resolve'}
+            </button>
+          </td>
+        </tr>
+      `).join('')
+      : '<tr><td colspan="7">No crash reports found.</td></tr>';
+
+    document.getElementById('crashReportsPage').textContent =
+      'Page ' + crashCurrentPage;
+
+    document.getElementById('crashPrev').disabled =
+      crashCurrentPage <= 1;
+
+    document.getElementById('crashNext').disabled = !crashHasMore;
+
+    status.textContent =
+      'Live crash data loaded · ' + new Date().toLocaleString();
+
+  } catch (error) {
+    status.textContent = 'Could not load crash reports: ' +
+      (error.message || 'Unknown error');
+
+    rows.innerHTML =
+      '<tr><td colspan="7">Unable to load crash reports.</td></tr>';
+
+    console.error('Crash reports:', error);
+  }
+}
+
+async function updateCrashStatus(id, resolved) {
+  try {
+    const {data, error} = await supabaseClient.functions.invoke(
+      'admin-crash-reports',
+      {
+        body: {
+          action: 'resolve',
+          id,
+          resolved
+        },
+        headers: {
+          Authorization: 'Bearer ' + crashAccessToken
+        }
+      }
+    );
+
+    if (error || !data?.success) {
+      throw new Error(data?.error || error?.message || 'Update failed');
+    }
+
+    document.getElementById('crashReportsStatus').textContent =
+      resolved ? 'Crash marked as resolved.' : 'Crash marked as unresolved.';
+
+    await loadCrashReports(crashCurrentPage);
+
+  } catch (error) {
+    document.getElementById('crashReportsStatus').textContent =
+      'Update failed: ' + error.message;
+  }
+}
+
+function viewCrashReport(id) {
+  const report = crashReportsCache.find(r => r.id === id);
+  if (!report) return;
+
+  document.getElementById('crashDetails').innerHTML = `
+    <strong>Error:</strong> ${crashEscape(report.error_message)}
+    <br><br>
+    <strong>Type:</strong> ${crashEscape(report.error_type)}
+    <br>
+    <strong>Platform:</strong> ${crashEscape(report.platform)}
+    <br>
+    <strong>App version:</strong> ${crashEscape(report.app_version)}
+    <br>
+    <strong>User ID:</strong> ${crashEscape(report.user_id)}
+    <br>
+    <strong>First seen:</strong> ${crashEscape(report.created_at)}
+  `;
+
+  document.getElementById('crashStack').textContent =
+    report.stack_trace || 'No stack trace available.';
+
+  document.getElementById('crashAIAnalysis').textContent =
+    report.ai_analysis || 'AI analysis has not been generated yet.';
+
+  if (report.ai_suggested_fix) {
+    document.getElementById('crashAIAnalysis').textContent +=
+      '\n\nSuggested fix: ' + report.ai_suggested_fix;
+  }
+}
+
+document.getElementById('crashReportsRows').addEventListener('click', e => {
+  const view = e.target.closest('[data-crash-view]');
+  const resolve = e.target.closest('[data-crash-resolve]');
+
+  if (view) viewCrashReport(view.dataset.crashView);
+
+  if (resolve) {
+    updateCrashStatus(
+      resolve.dataset.crashResolve,
+      resolve.dataset.resolved === 'true'
+    );
+  }
+});
+
+document.getElementById('refreshCrashReports')
+  .addEventListener('click', () => loadCrashReports(crashCurrentPage));
+
+document.getElementById('crashStatusFilter')
+  .addEventListener('change', () => loadCrashReports(1));
+
+document.getElementById('crashPrev')
+  .addEventListener('click', () => {
+    if (crashCurrentPage > 1) loadCrashReports(crashCurrentPage - 1);
+  });
+
+document.getElementById('crashNext')
+  .addEventListener('click', () => {
+    if (crashHasMore) loadCrashReports(crashCurrentPage + 1);
+  });
+
+// ===== END CRASH REPORTS MANAGEMENT =====
+
 function showAdminPage(name){
   document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.adminPage===name));
   document.getElementById('overview').classList.remove('active');
@@ -404,6 +703,7 @@ function showAdminPage(name){
     else if(el.id === 'adminVideosSection') el.hidden = name !== 'Videos';
    else if(el.id === 'adminChannelsSection') el.hidden = name !== 'Channels';
     else if(el.id === 'adminMonetizationSection') el.hidden = name !== 'Monetization';
+    else if(el.id === 'adminCrashReportsSection') el.hidden = name !== 'Crash Reports';
     else el.hidden = name !== 'Dashboard';
   });
   if(name === 'Channels'){
@@ -434,7 +734,10 @@ function showAdminPage(name){
       document.getElementById('adminUsersStatus').textContent='Could not load users: '+(err.message||'Session error');
     });
   }
-  if(name === 'Monetization'){
+  if(name === 'Crash Reports'){
+      loadCrashReports(1);
+    }
+    if(name === 'Monetization'){
     supabaseClient.auth.getSession().then(({data,error})=>{
       if(error) throw error;
       if(!data.session) throw new Error('Admin session expired. Please sign in again.');
