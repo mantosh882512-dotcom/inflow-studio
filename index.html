@@ -107,7 +107,7 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
 <div><div class="navlabel">WORKSPACE</div>
 <button class="nav active" data-page="Overview"><span class="ico">◫</span> Overview</button><button class="nav" data-page="Content"><span class="ico">▣</span> Content <span class="count">24</span></button><button class="nav" data-page="Analytics"><span class="ico">⌁</span> Analytics</button><button class="nav" data-page="Comments"><span class="ico">▤</span> Comments <span class="count">8</span></button><button class="nav" data-page="Audience"><span class="ico">♙</span> Audience</button></div>
 <div><div class="navlabel">MANAGE</div><button class="nav" data-page="Monetization"><span class="ico">◇</span> Monetization</button><button class="nav" data-page="Copyright"><span class="ico">◈</span> Copyright</button><button class="nav" data-page="Settings"><span class="ico">⚙</span> Settings</button></div>
-<div><div class="navlabel">SUPER ADMIN</div><button class="nav" data-admin-page="Dashboard"><span class="ico">▦</span> Admin Dashboard</button><button class="nav" data-admin-page="Users"><span class="ico">♙</span> User Management</button><button class="nav" data-admin-page="Videos"><span class="ico">▣</span> Video Management</button><button class="nav" data-admin-page="Channels"><span class="ico">♙</span> Channel Management</button><button class="nav" data-admin-page="Monetization"><span class="ico">＄</span> Monetization</button><button class="nav" data-admin-page="Crash Reports"><span class="ico">⚠</span> Crash Reports</button></div>
+<div><div class="navlabel">SUPER ADMIN</div><button class="nav" data-admin-page="Dashboard"><span class="ico">▦</span> Admin Dashboard</button><button class="nav" data-admin-page="Users"><span class="ico">♙</span> User Management</button><button class="nav" data-admin-page="Videos"><span class="ico">▣</span> Video Management</button><button class="nav" data-admin-page="Channels"><span class="ico">♙</span> Channel Management</button><button class="nav" data-admin-page="YouTube Permissions"><span class="ico">▶</span> YouTube Permissions</button><button class="nav" data-admin-page="Monetization"><span class="ico">＄</span> Monetization</button><button class="nav" data-admin-page="Crash Reports"><span class="ico">⚠</span> Crash Reports</button></div>
 <div class="sidebar-bottom"><div class="helpbox"><strong>✦ Creator resources</strong><p>Ideas and tips to help grow your Inflow channel.</p><button data-action="Creator resources">Explore resources ↗</button></div></div>
 </aside>
 <main>
@@ -323,6 +323,50 @@ body{background:radial-gradient(ellipse at 15% 0%,#302530 0%,var(--bg) 54%);colo
   </article>
 </section>
 
+
+
+<section id="adminYouTubePermissionsSection" hidden>
+  <div class="welcome">
+    <div>
+      <h2>YouTube Permissions</h2>
+      <p class="subtitle">Review creator requests to add YouTube videos to Inflow.</p>
+    </div>
+    <button class="softbtn" id="refreshYouTubePermissions" type="button">↻ Refresh</button>
+  </div>
+  <div class="notice" id="youtubePermissionsStatus">Permission requests are ready to load.</div>
+  <article class="card tablecard">
+    <div class="tablehead">
+      <div>
+        <h2 style="font-size:15px;margin:0 0 6px">Creator Permission Requests</h2>
+        <p class="subtitle">Review YouTube channel links and approve or reject creators.</p>
+      </div>
+      <select id="youtubePermissionFilter" class="search" style="max-width:180px">
+        <option value="pending">Pending requests</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+        <option value="all">All requests</option>
+      </select>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>Creator</th><th>Email</th><th>YouTube Channel</th>
+          <th>Requested at</th><th>Status</th><th>Admin note</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="youtubePermissionsRows">
+          <tr><td colspan="7">Waiting for permission requests…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tablehead" style="margin-top:14px">
+      <span id="youtubePermissionsPageLabel">Page 1</span>
+      <div style="display:flex;gap:8px">
+        <button class="softbtn" id="youtubePermissionsPrev" type="button" disabled>← Previous</button>
+        <button class="softbtn" id="youtubePermissionsNext" type="button" disabled>Next →</button>
+      </div>
+    </div>
+  </article>
+</section>
 
 <section id="adminCrashReportsSection" hidden>
   <div class="welcome">
@@ -693,6 +737,138 @@ document.getElementById('crashNext')
 
 // ===== END CRASH REPORTS MANAGEMENT =====
 
+
+// ===== YOUTUBE PERMISSIONS MANAGEMENT =====
+let youtubePermissionsAccessToken = '';
+let youtubePermissionsCurrentPage = 1;
+let youtubePermissionsHasMore = false;
+
+function escapeYouTubePermissionText(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  })[ch]);
+}
+
+async function loadYouTubePermissions(accessToken,page=1){
+  const status=document.getElementById('youtubePermissionsStatus');
+  status.textContent='Loading YouTube permission requests…';
+  youtubePermissionsAccessToken=accessToken;
+
+  try{
+    const filter=document.getElementById('youtubePermissionFilter').value;
+    const {data,error}=await supabaseClient.functions.invoke('admin-youtube-permissions',{
+      body:{page,perPage:25,status:filter},
+      headers:{Authorization:'Bearer '+accessToken}
+    });
+
+    if(error) throw new Error(data?.error||error.message||'Permission request failed.');
+    if(!data||data.success!==true||data.isAdmin!==true||!Array.isArray(data.requests)){
+      throw new Error(data?.error||'Permission requests were not approved.');
+    }
+
+    youtubePermissionsCurrentPage=data.page||page;
+    youtubePermissionsHasMore=data.hasMore===true;
+
+    const rows=document.getElementById('youtubePermissionsRows');
+    if(data.requests.length===0){
+      rows.innerHTML='<tr><td colspan="7">No requests found for this filter.</td></tr>';
+    }else{
+      rows.innerHTML=data.requests.map(request=>{
+        const id=escapeYouTubePermissionText(request.id);
+        const creator=escapeYouTubePermissionText(request.full_name||request.username||'Inflow creator');
+        const email=escapeYouTubePermissionText(request.email||'—');
+        const channel=escapeYouTubePermissionText(request.channel_url||'');
+        const requested=request.requested_at
+          ? escapeYouTubePermissionText(new Date(request.requested_at).toLocaleString()) : '—';
+        const state=escapeYouTubePermissionText(request.status||'pending');
+        const note=escapeYouTubePermissionText(request.admin_note||'—');
+        const actions=request.status==='pending'
+          ? `<button class="softbtn" type="button" data-youtube-permission-action="approve" data-request-id="${id}">Approve</button>
+             <button class="softbtn" type="button" data-youtube-permission-action="reject" data-request-id="${id}">Reject</button>`
+          : '—';
+
+        return `<tr>
+          <td>${creator}</td><td>${email}</td>
+          <td><a href="${channel}" target="_blank" rel="noopener noreferrer">Open channel ↗</a></td>
+          <td>${requested}</td><td><span class="badge">${state}</span></td>
+          <td>${note}</td><td style="white-space:nowrap">${actions}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    document.getElementById('youtubePermissionsPageLabel').textContent=
+      'Page '+youtubePermissionsCurrentPage+' · '+Number(data.totalCount||0).toLocaleString('en-IN')+' requests';
+    document.getElementById('youtubePermissionsPrev').disabled=youtubePermissionsCurrentPage<=1;
+    document.getElementById('youtubePermissionsNext').disabled=!youtubePermissionsHasMore;
+    status.textContent='Showing '+(data.count||0)+' permission requests · Live Supabase data.';
+  }catch(err){
+    status.textContent='Could not load requests: '+(err.message||'Unknown error');
+    document.getElementById('youtubePermissionsRows').innerHTML=
+      '<tr><td colspan="7">Unable to load permission requests.</td></tr>';
+    console.error('YouTube permissions:',err);
+  }
+}
+
+document.getElementById('youtubePermissionsRows').addEventListener('click',async event=>{
+  const button=event.target.closest('[data-youtube-permission-action]');
+  if(!button||button.disabled) return;
+
+  const action=button.dataset.youtubePermissionAction;
+  const requestId=button.dataset.requestId;
+  if(!requestId||!['approve','reject'].includes(action)) return;
+  if(!confirm(action==='approve'?'Approve this creator?':'Reject this creator request?')) return;
+
+  let adminNote='';
+  if(action==='reject'){
+    const entered=prompt('Enter a reason for rejection (optional):','');
+    if(entered===null) return;
+    adminNote=entered.trim();
+    if(adminNote.length>500){ alert('Admin note must be 500 characters or less.'); return; }
+  }
+
+  const status=document.getElementById('youtubePermissionsStatus');
+  status.textContent='Saving permission decision…';
+  button.disabled=true;
+
+  try{
+    const {data,error}=await supabaseClient.functions.invoke('admin-youtube-permission-action',{
+      body:{requestId,action,adminNote},
+      headers:{Authorization:'Bearer '+youtubePermissionsAccessToken}
+    });
+
+    if(error) throw new Error(data?.error||error.message||'Permission action failed.');
+    if(!data||data.success!==true||data.isAdmin!==true||data.auditLogged!==true){
+      throw new Error(data?.error||'Action or audit logging was not confirmed.');
+    }
+
+    status.textContent='Permission decision saved. Refreshing…';
+    await loadYouTubePermissions(youtubePermissionsAccessToken,youtubePermissionsCurrentPage);
+  }catch(err){
+    status.textContent='Action failed: '+(err.message||'Unknown error');
+    button.disabled=false;
+    console.error('YouTube permission action:',err);
+  }
+});
+
+document.getElementById('refreshYouTubePermissions').addEventListener('click',()=>{
+  if(youtubePermissionsAccessToken) loadYouTubePermissions(youtubePermissionsAccessToken,youtubePermissionsCurrentPage);
+});
+
+document.getElementById('youtubePermissionFilter').addEventListener('change',()=>{
+  if(youtubePermissionsAccessToken) loadYouTubePermissions(youtubePermissionsAccessToken,1);
+});
+
+document.getElementById('youtubePermissionsPrev').addEventListener('click',()=>{
+  if(youtubePermissionsAccessToken&&youtubePermissionsCurrentPage>1)
+    loadYouTubePermissions(youtubePermissionsAccessToken,youtubePermissionsCurrentPage-1);
+});
+
+document.getElementById('youtubePermissionsNext').addEventListener('click',()=>{
+  if(youtubePermissionsAccessToken&&youtubePermissionsHasMore)
+    loadYouTubePermissions(youtubePermissionsAccessToken,youtubePermissionsCurrentPage+1);
+});
+// ===== END YOUTUBE PERMISSIONS MANAGEMENT =====
+
 function showAdminPage(name){
   document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.adminPage===name));
   document.getElementById('overview').classList.remove('active');
@@ -702,6 +878,7 @@ function showAdminPage(name){
     if(el.id === 'adminUsersSection') el.hidden = name !== 'Users';
     else if(el.id === 'adminVideosSection') el.hidden = name !== 'Videos';
    else if(el.id === 'adminChannelsSection') el.hidden = name !== 'Channels';
+    else if(el.id === 'adminYouTubePermissionsSection') el.hidden = name !== 'YouTube Permissions';
     else if(el.id === 'adminMonetizationSection') el.hidden = name !== 'Monetization';
     else if(el.id === 'adminCrashReportsSection') el.hidden = name !== 'Crash Reports';
     else el.hidden = name !== 'Dashboard';
@@ -732,6 +909,16 @@ function showAdminPage(name){
       loadAdminUsers(data.session.access_token,1);
     }).catch(err=>{
       document.getElementById('adminUsersStatus').textContent='Could not load users: '+(err.message||'Session error');
+    });
+  }
+  if(name === 'YouTube Permissions'){
+    supabaseClient.auth.getSession().then(({data,error})=>{
+      if(error) throw error;
+      if(!data.session) throw new Error('Admin session expired. Please sign in again.');
+      loadYouTubePermissions(data.session.access_token,1);
+    }).catch(err=>{
+      document.getElementById('youtubePermissionsStatus').textContent =
+        'Could not load requests: '+(err.message||'Session error');
     });
   }
   if(name === 'Crash Reports'){
